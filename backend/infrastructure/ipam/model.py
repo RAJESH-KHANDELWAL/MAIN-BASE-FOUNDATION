@@ -1,49 +1,70 @@
-"""IP Address Management models."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - IPAM Models
 
-from __future__ import annotations
+Virtual Temple style IP address management foundation.
+"""
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 
 @dataclass
 class IPAddressInfo:
-    ip_id: str
-    address: str
-    address_family: str
-    ip_type: str = "PUBLIC"
-    network_id: str = ""
-    server_id: str = ""
-    provider: str = ""
-    region: str = ""
-    status: str = "PLANNED"
-    allocation_type: str = "DYNAMIC"
-    description: str = ""
-    created_at: str = ""
-    updated_at: str = ""
+    """
+    Represents an IP address managed by the infrastructure
+    control plane.
 
-    def __post_init__(self):
-        now = datetime.now(timezone.utc).isoformat()
+    IPAM = Internet Protocol Address Management.
+    """
 
-        if not self.created_at:
-            self.created_at = now
+    ip_address_id: str
+    ip_address: str
 
-        if not self.updated_at:
-            self.updated_at = now
+    address_family: str = "IPv4"
+    allocation_type: str = "DEDICATED"
+    provider: Optional[str] = None
 
-    def to_dict(self) -> dict:
+    server_id: Optional[str] = None
+    hosting_id: Optional[str] = None
+    domain_id: Optional[str] = None
+
+    network_id: Optional[str] = None
+    gateway: Optional[str] = None
+    subnet_mask: Optional[str] = None
+
+    reverse_dns: Optional[str] = None
+
+    status: str = "AVAILABLE"
+    verified: bool = False
+
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    created_at: str = field(
+        default_factory=lambda: datetime.utcnow().isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.utcnow().isoformat()
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
         return {
-            "ip_id": self.ip_id,
-            "address": self.address,
+            "ip_address_id": self.ip_address_id,
+            "ip_address": self.ip_address,
             "address_family": self.address_family,
-            "ip_type": self.ip_type,
-            "network_id": self.network_id,
-            "server_id": self.server_id,
-            "provider": self.provider,
-            "region": self.region,
-            "status": self.status,
             "allocation_type": self.allocation_type,
-            "description": self.description,
+            "provider": self.provider,
+            "server_id": self.server_id,
+            "hosting_id": self.hosting_id,
+            "domain_id": self.domain_id,
+            "network_id": self.network_id,
+            "gateway": self.gateway,
+            "subnet_mask": self.subnet_mask,
+            "reverse_dns": self.reverse_dns,
+            "status": self.status,
+            "verified": self.verified,
+            "metadata": self.metadata,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
