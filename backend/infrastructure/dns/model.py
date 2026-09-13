@@ -1,63 +1,102 @@
-"""DNS models for MAIN BASE FOUNDATION."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - DNS Models
 
-from __future__ import annotations
+Virtual Temple style DNS foundation.
+"""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 
 @dataclass
-class DNSRecord:
+class DNSRecordInfo:
+    """
+    Represents a DNS record managed by the infrastructure
+    control plane.
+    """
+
     record_id: str
-    zone_id: str
+    domain_name: str
+
     record_type: str
-    name: str
-    content: str
-    ttl: int = 300
-    priority: int | None = None
-    enabled: bool = True
+    record_name: str
+    record_value: str
+
+    ttl: int = 3600
+    priority: Optional[int] = None
+
+    status: str = "ACTIVE"
+    verified: bool = False
+
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
     created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.utcnow().isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.utcnow().isoformat()
     )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "record_id": self.record_id,
-            "zone_id": self.zone_id,
+            "domain_name": self.domain_name,
             "record_type": self.record_type,
-            "name": self.name,
-            "content": self.content,
+            "record_name": self.record_name,
+            "record_value": self.record_value,
             "ttl": self.ttl,
             "priority": self.priority,
-            "enabled": self.enabled,
+            "status": self.status,
+            "verified": self.verified,
+            "metadata": self.metadata,
             "created_at": self.created_at,
+            "updated_at": self.updated_at,
         }
 
 
 @dataclass
-class DNSZone:
+class DNSZoneInfo:
+    """
+    Represents an authoritative DNS zone.
+    """
+
     zone_id: str
-    domain: str
+    domain_name: str
+
+    zone_type: str = "PRIMARY"
+
+    primary_nameserver: Optional[str] = None
+    secondary_nameserver: Optional[str] = None
+
+    nameserver_status: str = "PENDING"
+    dns_status: str = "PENDING"
+
     status: str = "ACTIVE"
-    nameservers: list[str] = field(default_factory=list)
-    records: list[DNSRecord] = field(default_factory=list)
+    verified: bool = False
+
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
     created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.utcnow().isoformat()
     )
     updated_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.utcnow().isoformat()
     )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "zone_id": self.zone_id,
-            "domain": self.domain,
+            "domain_name": self.domain_name,
+            "zone_type": self.zone_type,
+            "primary_nameserver": self.primary_nameserver,
+            "secondary_nameserver": self.secondary_nameserver,
+            "nameserver_status": self.nameserver_status,
+            "dns_status": self.dns_status,
             "status": self.status,
-            "nameservers": self.nameservers,
-            "records": [
-                record.to_dict()
-                for record in self.records
-            ],
+            "verified": self.verified,
+            "metadata": self.metadata,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
