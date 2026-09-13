@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <meta
         name="description"
@@ -16,431 +20,428 @@
 
 <body>
 
-<header class="site-header">
+    <header class="site-header">
 
-    <div class="container header-inner">
+        <div class="container header-inner">
 
-        <a href="/" class="logo">
-            MAIN BASE FOUNDATION
-        </a>
-
-        <nav class="navigation">
-
-            <a href="#opportunities">
-                Opportunities
+            <a href="/" class="logo">
+                MAIN BASE FOUNDATION
             </a>
 
-            <a href="#profiles">
-                Profiles
-            </a>
+            <nav class="navigation">
 
-            <a href="#how-it-works">
-                How It Works
-            </a>
+                <a href="#opportunities">
+                    Opportunities
+                </a>
 
-            <button
-                type="button"
-                id="loginButton"
-                class="login-button"
-            >
-                Sign In
-            </button>
+                <a href="#profiles">
+                    Profiles
+                </a>
 
-        </nav>
+                <a href="#how-it-works">
+                    How It Works
+                </a>
 
-    </div>
+                <button
+                    type="button"
+                    id="loginButton"
+                    class="login-button"
+                >
+                    Sign In
+                </button>
 
-</header>
-
-
-<main>
-
-    <!-- HERO -->
-
-    <section class="hero">
-
-        <div class="container hero-grid">
-
-            <div class="hero-content">
-
-                <div class="eyebrow">
-                    VERIFIED PEOPLE • REAL WORK • ONE PLATFORM
-                </div>
-
-                <h1>
-                    Find the right people.
-                    <br>
-                    Find the right work.
-                </h1>
-
-                <p>
-                    Build your profile, discover live opportunities,
-                    connect with the right people and manage work
-                    from one platform.
-                </p>
-
-                <div class="hero-actions">
-
-                    <a
-                        href="#profiles"
-                        class="button button-primary"
-                    >
-                        Create a Profile
-                    </a>
-
-                    <a
-                        href="#opportunities"
-                        class="button button-secondary"
-                    >
-                        Explore Opportunities
-                    </a>
-
-                </div>
-
-            </div>
-
-
-            <div class="platform-card">
-
-                <div class="card-label">
-                    PLATFORM STATUS
-                </div>
-
-                <div class="status-row">
-                    <span class="status-dot"></span>
-                    <span id="apiStatus">
-                        Checking API...
-                    </span>
-                </div>
-
-                <div class="platform-stat">
-
-                    <strong id="profileCount">
-                        —
-                    </strong>
-
-                    <span>
-                        Profiles
-                    </span>
-
-                </div>
-
-                <div class="platform-stat">
-
-                    <strong id="opportunityCount">
-                        —
-                    </strong>
-
-                    <span>
-                        Live Opportunities
-                    </span>
-
-                </div>
-
-            </div>
+            </nav>
 
         </div>
 
-    </section>
+    </header>
 
 
-    <!-- OPPORTUNITIES -->
+    <main>
 
-    <section
-        id="opportunities"
-        class="section"
-    >
+        <section class="hero">
 
-        <div class="container">
+            <div class="container hero-grid">
 
-            <div class="section-heading">
+                <div class="hero-content">
 
-                <div class="eyebrow">
-                    LIVE OPPORTUNITIES
+                    <div class="eyebrow">
+                        VERIFIED PEOPLE • REAL WORK • ONE PLATFORM
+                    </div>
+
+                    <h1>
+                        Find the right people.
+                        <br>
+                        Find the right work.
+                    </h1>
+
+                    <p>
+                        Build your profile, discover live opportunities,
+                        connect with the right people and manage work
+                        from one platform.
+                    </p>
+
+                    <div class="hero-actions">
+
+                        <a
+                            href="#profiles"
+                            class="button button-primary"
+                        >
+                            Create a Profile
+                        </a>
+
+                        <a
+                            href="#opportunities"
+                            class="button button-secondary"
+                        >
+                            Explore Opportunities
+                        </a>
+
+                    </div>
+
                 </div>
 
-                <h2>
-                    Real opportunities. Real people.
-                </h2>
 
-                <p>
-                    Relevant opportunities can be discovered
-                    using profile skills, interests, language
-                    and availability.
-                </p>
+                <div class="platform-card">
+
+                    <div class="card-label">
+                        PLATFORM STATUS
+                    </div>
+
+                    <div class="status-row">
+
+                        <span class="status-dot"></span>
+
+                        <span id="apiStatus">
+                            Checking API...
+                        </span>
+
+                    </div>
+
+
+                    <div class="platform-stat">
+
+                        <strong id="profileCount">
+                            —
+                        </strong>
+
+                        <span>
+                            Profiles
+                        </span>
+
+                    </div>
+
+
+                    <div class="platform-stat">
+
+                        <strong id="opportunityCount">
+                            —
+                        </strong>
+
+                        <span>
+                            Live Opportunities
+                        </span>
+
+                    </div>
+
+                </div>
 
             </div>
 
+        </section>
 
-            <div
-                id="opportunityList"
-                class="opportunity-grid"
-            >
 
-                <div class="loading-card">
-                    Loading live opportunities...
+        <section
+            id="opportunities"
+            class="section"
+        >
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div class="eyebrow">
+                        LIVE OPPORTUNITIES
+                    </div>
+
+                    <h2>
+                        Real opportunities. Real people.
+                    </h2>
+
+                    <p>
+                        Relevant opportunities can be discovered
+                        using profile skills, interests, language
+                        and availability.
+                    </p>
+
+                </div>
+
+
+                <div
+                    id="opportunityList"
+                    class="opportunity-grid"
+                >
+
+                    <div class="loading-card">
+                        Loading live opportunities...
+                    </div>
+
                 </div>
 
             </div>
+
+        </section>
+
+
+        <section
+            id="profiles"
+            class="section section-alt"
+        >
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div class="eyebrow">
+                        UNIVERSAL PROFILES
+                    </div>
+
+                    <h2>
+                        One identity. Multiple profiles.
+                    </h2>
+
+                    <p>
+                        A person or organization can create different
+                        profiles for different real-world activities.
+                    </p>
+
+                </div>
+
+
+                <div class="profile-grid">
+
+                    <article class="profile-card">
+
+                        <span class="profile-number">
+                            01
+                        </span>
+
+                        <h3>
+                            Personal Profile
+                        </h3>
+
+                        <p>
+                            Skills, interests, experience,
+                            languages and availability.
+                        </p>
+
+                    </article>
+
+
+                    <article class="profile-card">
+
+                        <span class="profile-number">
+                            02
+                        </span>
+
+                        <h3>
+                            Business Profile
+                        </h3>
+
+                        <p>
+                            Services, products, business
+                            activities and opportunities.
+                        </p>
+
+                    </article>
+
+
+                    <article class="profile-card">
+
+                        <span class="profile-number">
+                            03
+                        </span>
+
+                        <h3>
+                            Company Profile
+                        </h3>
+
+                        <p>
+                            Organization information,
+                            teams, projects and authorized people.
+                        </p>
+
+                    </article>
+
+
+                    <article class="profile-card">
+
+                        <span class="profile-number">
+                            04
+                        </span>
+
+                        <h3>
+                            Farm Profile
+                        </h3>
+
+                        <p>
+                            Crops, seasonal requirements,
+                            equipment and farm activities.
+                        </p>
+
+                    </article>
+
+
+                    <article class="profile-card">
+
+                        <span class="profile-number">
+                            05
+                        </span>
+
+                        <h3>
+                            Shop Profile
+                        </h3>
+
+                        <p>
+                            Products, categories, location
+                            and shop operations.
+                        </p>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section
+            id="how-it-works"
+            class="section"
+        >
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div class="eyebrow">
+                        PLATFORM WORKFLOW
+                    </div>
+
+                    <h2>
+                        From profile to completed work.
+                    </h2>
+
+                </div>
+
+
+                <div class="workflow">
+
+                    <div class="workflow-step">
+
+                        <strong>
+                            01
+                        </strong>
+
+                        <span>
+                            Identity &amp; Profile
+                        </span>
+
+                    </div>
+
+
+                    <div class="workflow-step">
+
+                        <strong>
+                            02
+                        </strong>
+
+                        <span>
+                            Opportunity
+                        </span>
+
+                    </div>
+
+
+                    <div class="workflow-step">
+
+                        <strong>
+                            03
+                        </strong>
+
+                        <span>
+                            AI Matching
+                        </span>
+
+                    </div>
+
+
+                    <div class="workflow-step">
+
+                        <strong>
+                            04
+                        </strong>
+
+                        <span>
+                            Connection
+                        </span>
+
+                    </div>
+
+
+                    <div class="workflow-step">
+
+                        <strong>
+                            05
+                        </strong>
+
+                        <span>
+                            Project &amp; Payment
+                        </span>
+
+                    </div>
+
+
+                    <div class="workflow-step">
+
+                        <strong>
+                            06
+                        </strong>
+
+                        <span>
+                            Reputation
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer class="site-footer">
+
+        <div class="container footer-inner">
+
+            <span>
+                MAIN BASE FOUNDATION
+            </span>
+
+            <span>
+                Web • Android • iOS
+            </span>
 
         </div>
 
-    </section>
+    </footer>
 
 
-    <!-- PROFILES -->
-
-    <section
-        id="profiles"
-        class="section section-alt"
-    >
-
-        <div class="container">
-
-            <div class="section-heading">
-
-                <div class="eyebrow">
-                    UNIVERSAL PROFILES
-                </div>
-
-                <h2>
-                    One identity. Multiple profiles.
-                </h2>
-
-                <p>
-                    A person or organization can create different
-                    profiles for different real-world activities.
-                </p>
-
-            </div>
-
-
-            <div class="profile-grid">
-
-                <article class="profile-card">
-
-                    <span class="profile-number">
-                        01
-                    </span>
-
-                    <h3>
-                        Personal Profile
-                    </h3>
-
-                    <p>
-                        Skills, interests, experience,
-                        languages and availability.
-                    </p>
-
-                </article>
-
-
-                <article class="profile-card">
-
-                    <span class="profile-number">
-                        02
-                    </span>
-
-                    <h3>
-                        Business Profile
-                    </h3>
-
-                    <p>
-                        Services, products, business
-                        activities and opportunities.
-                    </p>
-
-                </article>
-
-
-                <article class="profile-card">
-
-                    <span class="profile-number">
-                        03
-                    </span>
-
-                    <h3>
-                        Company Profile
-                    </h3>
-
-                    <p>
-                        Organization information,
-                        teams, projects and authorized people.
-                    </p>
-
-                </article>
-
-
-                <article class="profile-card">
-
-                    <span class="profile-number">
-                        04
-                    </span>
-
-                    <h3>
-                        Farm Profile
-                    </h3>
-
-                    <p>
-                        Crops, seasonal requirements,
-                        equipment and farm activities.
-                    </p>
-
-                </article>
-
-
-                <article class="profile-card">
-
-                    <span class="profile-number">
-                        05
-                    </span>
-
-                    <h3>
-                        Shop Profile
-                    </h3>
-
-                    <p>
-                        Products, categories, location
-                        and shop operations.
-                    </p>
-
-                </article>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- HOW IT WORKS -->
-
-    <section
-        id="how-it-works"
-        class="section"
-    >
-
-        <div class="container">
-
-            <div class="section-heading">
-
-                <div class="eyebrow">
-                    PLATFORM WORKFLOW
-                </div>
-
-                <h2>
-                    From profile to completed work.
-                </h2>
-
-            </div>
-
-
-            <div class="workflow">
-
-                <div class="workflow-step">
-
-                    <strong>
-                        01
-                    </strong>
-
-                    <span>
-                        Identity & Profile
-                    </span>
-
-                </div>
-
-
-                <div class="workflow-step">
-
-                    <strong>
-                        02
-                    </strong>
-
-                    <span>
-                        Opportunity
-                    </span>
-
-                </div>
-
-
-                <div class="workflow-step">
-
-                    <strong>
-                        03
-                    </strong>
-
-                    <span>
-                        AI Matching
-                    </span>
-
-                </div>
-
-
-                <div class="workflow-step">
-
-                    <strong>
-                        04
-                    </strong>
-
-                    <span>
-                        Connection
-                    </span>
-
-                </div>
-
-
-                <div class="workflow-step">
-
-                    <strong>
-                        05
-                    </strong>
-
-                    <span>
-                        Project & Payment
-                    </span>
-
-                </div>
-
-
-                <div class="workflow-step">
-
-                    <strong>
-                        06
-                    </strong>
-
-                    <span>
-                        Reputation
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-</main>
-
-
-<footer class="site-footer">
-
-    <div class="container footer-inner">
-
-        <span>
-            MAIN BASE FOUNDATION
-        </span>
-
-        <span>
-            Web • Android • iOS
-        </span>
-
-    </div>
-
-</footer>
-
-
-<script src="app.js"></script>
+    <script src="app.js"></script>
 
 </body>
 </html>
