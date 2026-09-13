@@ -2,23 +2,21 @@
 MAIN BASE FOUNDATION
 Infrastructure - Network Service
 
-Network inventory and lifecycle management.
+Virtual Temple style network foundation.
 """
 
+from __future__ import annotations
+
+import datetime
+import json
 from typing import Any, Dict, List, Optional
 
-from backend.database.connection import get_connection
+from backend.database.service import DatabaseService
 from backend.infrastructure.network.model import NetworkInfo
 
 
 class NetworkService:
-    """
-    Manages network inventory inside the infrastructure
-    control plane.
-
-    This service stores network configuration records.
-    Actual network provisioning will be connected later.
-    """
+    """Manage network inventory through DatabaseService."""
 
     ALLOWED_NETWORK_TYPES = {
         "PUBLIC",
@@ -39,79 +37,75 @@ class NetworkService:
 
     TABLE_NAME = "infrastructure_networks"
 
-    def __init__(self):
+    def __init__(
+        self,
+        database_service: Optional[DatabaseService] = None,
+    ) -> None:
+        self.database = (
+            database_service
+            or DatabaseService()
+        )
+
         self.initialize()
 
     def initialize(self) -> None:
-        connection = get_connection()
+        """Initialize the network table."""
 
-        connection.execute(
+        self.database.initialize()
+
+        self.database.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.TABLE_NAME} (
                 network_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL UNIQUE,
-
                 network_type TEXT NOT NULL,
                 provider TEXT,
-
                 region TEXT,
                 datacenter TEXT,
-
                 cidr TEXT,
                 gateway TEXT,
                 subnet_mask TEXT,
-
                 dns_primary TEXT,
                 dns_secondary TEXT,
-
                 vlan_id INTEGER,
-
                 status TEXT NOT NULL,
                 verified INTEGER NOT NULL DEFAULT 0,
-
                 metadata TEXT,
-
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
 
-        connection.commit()
-
     def _next_id(self) -> str:
-        connection = get_connection()
-
-        row = connection.execute(
+        row = self.database.fetchone(
             f"""
             SELECT network_id
             FROM {self.TABLE_NAME}
             ORDER BY rowid DESC
             LIMIT 1
             """
-        ).fetchone()
+        )
 
         if not row:
             return "NET-000001"
 
-        last_id = row["network_id"]
-        number = int(last_id.split("-")[-1])
+        number = int(
+            row["network_id"].split("-")[-1]
+        )
 
         return f"NET-{number + 1:06d}"
 
+    @staticmethod
     def _serialize_metadata(
-        self,
         metadata: Optional[Dict[str, Any]],
     ) -> str:
-        import json
-
         return json.dumps(metadata or {})
 
+    @staticmethod
     def _deserialize_metadata(
-        self,
         value: Optional[str],
     ) -> Dict[str, Any]:
-        import json
 
         if not value:
             return {}
@@ -121,7 +115,7 @@ class NetworkService:
         except (TypeError, ValueError):
             return {}
 
-    def _row_to_model(self, row) -> NetworkInfo:
+    def _to_model(self, row) -> NetworkInfo:
         return NetworkInfo(
             network_id=row["network_id"],
             name=row["name"],
@@ -137,10 +131,16 @@ class NetworkService:
             vlan_id=row["vlan_id"],
             status=row["status"],
             verified=bool(row["verified"]),
-            metadata=self._deserialize_metadata(row["metadata"]),
+            metadata=self._deserialize_metadata(
+                row["metadata"]
+            ),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
+
+    # ---------------------------------------------------------
+    # CREATE
+    # ---------------------------------------------------------
 
     def create(
         self,
@@ -165,23 +165,20 @@ class NetworkService:
 
         if network_type not in self.ALLOWED_NETWORK_TYPES:
             raise ValueError(
-                f"Unsupported network type: {network_type}"
+                f"Unsupported network type: "
+                f"{network_type}"
             )
 
         if status not in self.ALLOWED_STATUS:
             raise ValueError(
-                f"Unsupported network status: {status}"
+                f"Unsupported network status: "
+                f"{status}"
             )
 
         network_id = self._next_id()
-
-        import datetime
-
         now = datetime.datetime.utcnow().isoformat()
 
-        connection = get_connection()
-
-        connection.execute(
+        self.database.execute(
             f"""
             INSERT INTO {self.TABLE_NAME} (
                 network_id,
@@ -202,7 +199,10 @@ class NetworkService:
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?
+            )
             """,
             (
                 network_id,
@@ -225,88 +225,57 @@ class NetworkService:
             ),
         )
 
-        connection.commit()
-
         return self.get(network_id)
+
+    # ---------------------------------------------------------
+    # READ
+    # ---------------------------------------------------------
 
     def get(
         self,
         network_id: str,
     ) -> Optional[NetworkInfo]:
 
-        connection = get_connection()
-
-        row = connection.execute(
+        row = self.database.fetchone(
             f"""
             SELECT *
             FROM {self.TABLE_NAME}
             WHERE network_id = ?
             """,
             (network_id,),
-        ).fetchone()
+        )
 
         if not row:
             return None
 
-        return self._row_to_model(row)
-
-    def get_by_name(
-        self,
-        name: str,
-    ) -> Optional[NetworkInfo]:
-
-        connection = get_connection()
-
-        row = connection.execute(
-            f"""
-            SELECT *
-            FROM {self.TABLE_NAME}
-            WHERE name = ?
-            """,
-            (name,),
-        ).fetchone()
-
-        if not row:
-            return None
-
-        return self._row_to_model(row)
+        return self._to_model(row)
 
     def list(
         self,
         status: Optional[str] = None,
-        network_type: Optional[str] = None,
     ) -> List[NetworkInfo]:
 
-        connection = get_connection()
-
-        conditions = []
-        values = []
-
         if status:
-            conditions.append("status = ?")
-            values.append(status)
-
-        if network_type:
-            conditions.append("network_type = ?")
-            values.append(network_type)
-
-        where_clause = ""
-
-        if conditions:
-            where_clause = "WHERE " + " AND ".join(conditions)
-
-        rows = connection.execute(
-            f"""
-            SELECT *
-            FROM {self.TABLE_NAME}
-            {where_clause}
-            ORDER BY rowid ASC
-            """,
-            tuple(values),
-        ).fetchall()
+            rows = self.database.fetchall(
+                f"""
+                SELECT *
+                FROM {self.TABLE_NAME}
+                WHERE status = ?
+                ORDER BY rowid ASC
+                """,
+                (status,),
+            )
+        else:
+            rows = self.database.fetchall(
+                f"""
+                SELECT *
+                FROM {self.TABLE_NAME}
+                ORDER BY rowid ASC
+                """
+            )
 
         return [
-            self._row_to_model(row)
+            self._to_model(row)
             for row in rows
         ]
 
@@ -315,35 +284,46 @@ class NetworkService:
         network_type: str,
     ) -> List[NetworkInfo]:
 
-        return self.list(
-            network_type=network_type,
+        if network_type not in self.ALLOWED_NETWORK_TYPES:
+            raise ValueError(
+                f"Unsupported network type: "
+                f"{network_type}"
+            )
+
+        rows = self.database.fetchall(
+            f"""
+            SELECT *
+            FROM {self.TABLE_NAME}
+            WHERE network_type = ?
+            ORDER BY rowid ASC
+            """,
+            (network_type,),
         )
+
+        return [
+            self._to_model(row)
+            for row in rows
+        ]
 
     def exists(
         self,
-        network_id: str,
+        name: str,
     ) -> bool:
 
-        return self.get(network_id) is not None
-
-    def delete(
-        self,
-        network_id: str,
-    ) -> bool:
-
-        connection = get_connection()
-
-        cursor = connection.execute(
+        row = self.database.fetchone(
             f"""
-            DELETE FROM {self.TABLE_NAME}
-            WHERE network_id = ?
+            SELECT network_id
+            FROM {self.TABLE_NAME}
+            WHERE name = ?
             """,
-            (network_id,),
+            (name,),
         )
 
-        connection.commit()
+        return row is not None
 
-        return cursor.rowcount > 0
+    # ---------------------------------------------------------
+    # UPDATE
+    # ---------------------------------------------------------
 
     def update(
         self,
@@ -357,6 +337,8 @@ class NetworkService:
             return None
 
         allowed_fields = {
+            "name",
+            "network_type",
             "provider",
             "region",
             "datacenter",
@@ -380,6 +362,16 @@ class NetworkService:
         if not updates:
             return current
 
+        if "network_type" in updates:
+            if (
+                updates["network_type"]
+                not in self.ALLOWED_NETWORK_TYPES
+            ):
+                raise ValueError(
+                    f"Unsupported network type: "
+                    f"{updates['network_type']}"
+                )
+
         if "status" in updates:
             if updates["status"] not in self.ALLOWED_STATUS:
                 raise ValueError(
@@ -387,17 +379,19 @@ class NetworkService:
                     f"{updates['status']}"
                 )
 
-        import datetime
-
-        updates["updated_at"] = datetime.datetime.utcnow().isoformat()
-
         if "metadata" in updates:
             updates["metadata"] = self._serialize_metadata(
                 updates["metadata"]
             )
 
         if "verified" in updates:
-            updates["verified"] = int(updates["verified"])
+            updates["verified"] = int(
+                updates["verified"]
+            )
+
+        updates["updated_at"] = (
+            datetime.datetime.utcnow().isoformat()
+        )
 
         set_clause = ", ".join(
             f"{field} = ?"
@@ -407,9 +401,7 @@ class NetworkService:
         values = list(updates.values())
         values.append(network_id)
 
-        connection = get_connection()
-
-        connection.execute(
+        self.database.execute(
             f"""
             UPDATE {self.TABLE_NAME}
             SET {set_clause}
@@ -418,9 +410,30 @@ class NetworkService:
             values,
         )
 
-        connection.commit()
-
         return self.get(network_id)
+
+    # ---------------------------------------------------------
+    # DELETE
+    # ---------------------------------------------------------
+
+    def delete(
+        self,
+        network_id: str,
+    ) -> bool:
+
+        affected = self.database.execute(
+            f"""
+            DELETE FROM {self.TABLE_NAME}
+            WHERE network_id = ?
+            """,
+            (network_id,),
+        )
+
+        return affected > 0
+
+    # ---------------------------------------------------------
+    # STATE OPERATIONS
+    # ---------------------------------------------------------
 
     def set_active(
         self,
@@ -461,3 +474,8 @@ class NetworkService:
             network_id,
             status="OFFLINE",
         )
+
+
+__all__ = [
+    "NetworkService",
+]
