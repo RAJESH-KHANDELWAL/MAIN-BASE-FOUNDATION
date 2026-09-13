@@ -5,15 +5,19 @@ Infrastructure - Server Service
 Server inventory and lifecycle service.
 """
 
+from __future__ import annotations
+
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-import json
 
-from backend.database.connection import get_connection
+from backend.database.service import DatabaseService
 
 
 class ServerService:
     """Service layer for server infrastructure."""
+
+    TABLE_NAME = "infrastructure_servers"
 
     ALLOWED_SERVER_TYPES = {
         "PHYSICAL",
@@ -30,51 +34,49 @@ class ServerService:
         "TERMINATED",
     }
 
-    def __init__(self):
+    def __init__(
+        self,
+        database_service: Optional[DatabaseService] = None,
+    ) -> None:
+        self.database = (
+            database_service
+            or DatabaseService()
+        )
+
         self.initialize()
 
     def initialize(self) -> None:
         """Create the server inventory table."""
 
-        conn = get_connection()
+        self.database.initialize()
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS infrastructure_servers (
+        self.database.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.TABLE_NAME} (
                 server_id TEXT PRIMARY KEY,
                 server_type TEXT NOT NULL,
-
                 name TEXT,
                 provider TEXT,
                 location TEXT,
                 region TEXT,
                 datacenter TEXT,
-
                 ip_address_id TEXT,
-
                 operating_system TEXT,
                 control_panel TEXT,
-
                 cpu_cores INTEGER,
                 memory_gb REAL,
                 storage_gb REAL,
                 bandwidth_gb REAL,
-
                 virtualization TEXT,
-
                 status TEXT NOT NULL DEFAULT 'PROVISIONING',
                 verified INTEGER NOT NULL DEFAULT 0,
                 root_access INTEGER NOT NULL DEFAULT 0,
-
                 metadata TEXT,
-
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
-
-        conn.commit()
 
     @staticmethod
     def _now() -> str:
@@ -90,6 +92,7 @@ class ServerService:
     def _deserialize_metadata(
         value: Optional[str],
     ) -> Dict[str, Any]:
+
         if not value:
             return {}
 
@@ -98,21 +101,22 @@ class ServerService:
         except (TypeError, ValueError):
             return {}
 
-    @staticmethod
-    def _next_server_id(conn) -> str:
-        row = conn.execute(
-            """
+    def _next_server_id(self) -> str:
+        row = self.database.fetchone(
+            f"""
             SELECT server_id
-            FROM infrastructure_servers
-            ORDER BY server_id DESC
+            FROM {self.TABLE_NAME}
+            ORDER BY rowid DESC
             LIMIT 1
             """
-        ).fetchone()
+        )
 
         if not row:
             return "SRV-000001"
 
-        number = int(row["server_id"].split("-")[1]) + 1
+        number = int(
+            row["server_id"].split("-")[1]
+        ) + 1
 
         return f"SRV-{number:06d}"
 
@@ -145,14 +149,12 @@ class ServerService:
                 "Use PHYSICAL, VIRTUAL, or DEDICATED."
             )
 
-        conn = get_connection()
-
-        server_id = self._next_server_id(conn)
+        server_id = self._next_server_id()
         now = self._now()
 
-        conn.execute(
-            """
-            INSERT INTO infrastructure_servers (
+        self.database.execute(
+            f"""
+            INSERT INTO {self.TABLE_NAME} (
                 server_id,
                 server_type,
                 name,
@@ -175,7 +177,10 @@ class ServerService:
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
             """,
             (
                 server_id,
@@ -202,8 +207,6 @@ class ServerService:
             ),
         )
 
-        conn.commit()
-
         return self.get_server(server_id)
 
     def get_server(
@@ -212,16 +215,14 @@ class ServerService:
     ) -> Optional[Dict[str, Any]]:
         """Get a server by ID."""
 
-        conn = get_connection()
-
-        row = conn.execute(
-            """
+        row = self.database.fetchone(
+            f"""
             SELECT *
-            FROM infrastructure_servers
+            FROM {self.TABLE_NAME}
             WHERE server_id = ?
             """,
             (server_id,),
-        ).fetchone()
+        )
 
         if not row:
             return None
@@ -231,17 +232,18 @@ class ServerService:
     def list_servers(self) -> List[Dict[str, Any]]:
         """List all servers."""
 
-        conn = get_connection()
-
-        rows = conn.execute(
-            """
+        rows = self.database.fetchall(
+            f"""
             SELECT *
-            FROM infrastructure_servers
+            FROM {self.TABLE_NAME}
             ORDER BY created_at DESC
             """
-        ).fetchall()
+        )
 
-        return [self._row_to_dict(row) for row in rows]
+        return [
+            self._row_to_dict(row)
+            for row in rows
+        ]
 
     def list_by_type(
         self,
@@ -254,19 +256,20 @@ class ServerService:
         if server_type not in self.ALLOWED_SERVER_TYPES:
             raise ValueError("Invalid server_type")
 
-        conn = get_connection()
-
-        rows = conn.execute(
-            """
+        rows = self.database.fetchall(
+            f"""
             SELECT *
-            FROM infrastructure_servers
+            FROM {self.TABLE_NAME}
             WHERE server_type = ?
             ORDER BY created_at DESC
             """,
             (server_type,),
-        ).fetchall()
+        )
 
-        return [self._row_to_dict(row) for row in rows]
+        return [
+            self._row_to_dict(row)
+            for row in rows
+        ]
 
     def update_server(
         self,
@@ -314,7 +317,9 @@ class ServerService:
                 value = str(value).strip().upper()
 
                 if value not in self.ALLOWED_STATUS:
-                    raise ValueError("Invalid server status")
+                    raise ValueError(
+                        "Invalid server status"
+                    )
 
             if field_name in {
                 "verified",
@@ -325,7 +330,9 @@ class ServerService:
             if field_name == "metadata":
                 value = self._serialize_metadata(value)
 
-            updates.append(f"{field_name} = ?")
+            updates.append(
+                f"{field_name} = ?"
+            )
             values.append(value)
 
         if not updates:
@@ -335,18 +342,14 @@ class ServerService:
         values.append(self._now())
         values.append(server_id)
 
-        conn = get_connection()
-
-        conn.execute(
+        self.database.execute(
             f"""
-            UPDATE infrastructure_servers
+            UPDATE {self.TABLE_NAME}
             SET {", ".join(updates)}
             WHERE server_id = ?
             """,
             values,
         )
-
-        conn.commit()
 
         return self.get_server(server_id)
 
@@ -401,19 +404,15 @@ class ServerService:
     ) -> bool:
         """Delete a server inventory record."""
 
-        conn = get_connection()
-
-        cursor = conn.execute(
-            """
-            DELETE FROM infrastructure_servers
+        affected = self.database.execute(
+            f"""
+            DELETE FROM {self.TABLE_NAME}
             WHERE server_id = ?
             """,
             (server_id,),
         )
 
-        conn.commit()
-
-        return cursor.rowcount > 0
+        return affected > 0
 
     def exists(
         self,
@@ -421,22 +420,23 @@ class ServerService:
     ) -> bool:
         """Check whether a server exists."""
 
-        conn = get_connection()
-
-        row = conn.execute(
-            """
+        row = self.database.fetchone(
+            f"""
             SELECT 1
-            FROM infrastructure_servers
+            FROM {self.TABLE_NAME}
             WHERE server_id = ?
             LIMIT 1
             """,
             (server_id,),
-        ).fetchone()
+        )
 
         return row is not None
 
     @classmethod
-    def _row_to_dict(cls, row) -> Dict[str, Any]:
+    def _row_to_dict(
+        cls,
+        row,
+    ) -> Dict[str, Any]:
         return {
             "server_id": row["server_id"],
             "server_type": row["server_type"],
@@ -456,7 +456,14 @@ class ServerService:
             "status": row["status"],
             "verified": bool(row["verified"]),
             "root_access": bool(row["root_access"]),
-            "metadata": cls._deserialize_metadata(row["metadata"]),
+            "metadata": cls._deserialize_metadata(
+                row["metadata"]
+            ),
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
         }
+
+
+__all__ = [
+    "ServerService",
+]
