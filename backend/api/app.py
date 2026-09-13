@@ -9,6 +9,7 @@ from backend.api.supreme import router as supreme_router
 from backend.api.identity import router as identity_router
 from backend.api.auth import router as auth_router
 from backend.api.roles import router as roles_router
+from backend.api.matching import router as matching_router
 
 from backend.api.connectivity import ConnectivityAPI
 from backend.api.cloud import CloudAPI
@@ -58,6 +59,8 @@ app.include_router(identity_router)
 app.include_router(auth_router)
 app.include_router(roles_router)
 app.include_router(opportunities_router)
+app.include_router(opportunities_router)
+app.include_router(matching_router)
 
 
 # ==========================
