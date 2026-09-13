@@ -1,1 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
 
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Infrastructure Control Plane | MAIN BASE FOUNDATION
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="infrastructure-control-plane.css"
+    >
+</head>
+
+<body>
+
+    <main class="infrastructure-control-plane">
+
+        <header class="infrastructure-control-plane-header">
+
+            <div>
+                <p class="infrastructure-control-plane-eyebrow">
+                    MAIN BASE FOUNDATION
+                </p>
+
+                <h1>
+                    INFRASTRUCTURE CONTROL PLANE
+                </h1>
+
+                <p class="infrastructure-control-plane-description">
+                    Domains, Hosting, Servers, IPAM, Network and DNS
+                    infrastructure management foundation.
+                </p>
+            </div>
+
+            <div
+                id="infrastructure-control-plane-status"
+                class="infrastructure-control-plane-status"
+            >
+                CONNECTING...
+            </div>
+
+        </header>
+
+
+        <section
+            id="infrastructure-control-plane-summary"
+            class="infrastructure-control-plane-summary"
+        >
+
+            <article class="infrastructure-control-plane-card">
+                <span>DOMAINS</span>
+                <strong id="infrastructure-domains-count">0</strong>
+            </article>
+
+            <article class="infrastructure-control-plane-card">
+                <span>HOSTING</span>
+                <strong id="infrastructure-hosting-count">0</strong>
+            </article>
+
+            <article class="infrastructure-control-plane-card">
+                <span>SERVERS</span>
+                <strong id="infrastructure-servers-count">0</strong>
+            </article>
+
+            <article class="infrastructure-control-plane-card">
+                <span>IP ADDRESSES</span>
+                <strong id="infrastructure-ipam-count">0</strong>
+            </article>
+
+            <article class="infrastructure-control-plane-card">
+                <span>NETWORKS</span>
+                <strong id="infrastructure-network-count">0</strong>
+            </article>
+
+            <article class="infrastructure-control-plane-card">
+                <span>DNS ZONES</span>
+                <strong id="infrastructure-dns-zones-count">0</strong>
+            </article>
+
+            <article class="infrastructure-control-plane-card">
+                <span>DNS RECORDS</span>
+                <strong id="infrastructure-dns-records-count">0</strong>
+            </article>
+
+        </section>
+
+
+        <section class="infrastructure-control-plane-modules">
+
+            <h2>
+                INFRASTRUCTURE MODULES
+            </h2>
+
+            <div class="infrastructure-control-plane-module-grid">
+
+                <a
+                    href="#domains"
+                    class="infrastructure-control-plane-module"
+                >
+                    <span>01</span>
+                    <h3>DOMAINS</h3>
+                    <p>
+                        Domain inventory and lifecycle.
+                    </p>
+                </a>
+
+
+                <a
+                    href="#hosting"
+                    class="infrastructure-control-plane-module"
+                >
+                    <span>02</span>
+                    <h3>HOSTING</h3>
+                    <p>
+                        Hosting resources and lifecycle.
+                    </p>
+                </a>
+
+
+                <a
+                    href="#servers"
+                    class="infrastructure-control-plane-module"
+                >
+                    <span>03</span>
+                    <h3>SERVERS</h3>
+                    <p>
+                        Server inventory and status.
+                    </p>
+                </a>
+
+
+                <a
+                    href="#ipam"
+                    class="infrastructure-control-plane-module"
+                >
+                    <span>04</span>
+                    <h3>IPAM</h3>
+                    <p>
+                        IP address resource management.
+                    </p>
+                </a>
+
+
+                <a
+                    href="#network"
+                    class="infrastructure-control-plane-module"
+                >
+                    <span>05</span>
+                    <h3>NETWORK</h3>
+                    <p>
+                        Network and subnet foundation.
+                    </p>
+                </a>
+
+
+                <a
+                    href="#dns"
+                    class="infrastructure-control-plane-module"
+                >
+                    <span>06</span>
+                    <h3>DNS</h3>
+                    <p>
+                        DNS zones and records.
+                    </p>
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <section class="infrastructure-control-plane-live">
+
+            <div class="infrastructure-control-plane-live-header">
+
+                <div>
+                    <h2>
+                        LIVE INFRASTRUCTURE DATA
+                    </h2>
+
+                    <p>
+                        Data is loaded directly from the
+                        MAIN BASE FOUNDATION API.
+                    </p>
+                </div>
+
+                <button
+                    id="infrastructure-control-plane-refresh"
+                    type="button"
+                >
+                    REFRESH
+                </button>
+
+            </div>
+
+
+            <div
+                id="infrastructure-control-plane-data"
+                class="infrastructure-control-plane-data"
+            >
+                Loading live infrastructure data...
+            </div>
+
+        </section>
+
+
+        <footer class="infrastructure-control-plane-footer">
+
+            <span>
+                MAIN BASE FOUNDATION
+            </span>
+
+            <span>
+                INFRASTRUCTURE CONTROL PLANE
+            </span>
+
+            <span id="infrastructure-control-plane-updated">
+                —
+            </span>
+
+        </footer>
+
+    </main>
+
+
+    <script src="infrastructure-control-plane.js"></script>
+
+</body>
+</html>
