@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="Create a profile on MAIN BASE FOUNDATION."
+    >
+
+    <title>Create Profile | MAIN BASE FOUNDATION</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+
+<body>
+
+    <header class="site-header">
+
+        <div class="container header-inner">
+
+            <a href="/" class="logo">
+                MAIN BASE FOUNDATION
+            </a>
+
+            <nav class="navigation">
+
+                <a href="/">
+                    Home
+                </a>
+
+                <a href="/#opportunities">
+                    Opportunities
+                </a>
+
+                <a href="/#profiles">
+                    Profiles
+                </a>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <section class="section">
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div class="eyebrow">
+                        CREATE YOUR PROFILE
+                    </div>
+
+                    <h1>
+                        Build your public profile.
+                    </h1>
+
+                    <p>
+                        Create the profile that represents the
+                        activity, work, business or organization
+                        you want to operate on the platform.
+                    </p>
+
+                </div>
+
+
+                <form
+                    id="profileCreateForm"
+                    class="profile-form"
+                >
+
+                    <div class="form-section">
+
+                        <h2>
+                            Profile Type
+                        </h2>
+
+                        <p>
+                            Choose the context in which this
+                            profile will operate.
+                        </p>
+
+
+                        <div class="profile-type-grid">
+
+                            <label class="profile-type-option">
+
+                                <input
+                                    type="radio"
+                                    name="profile_type"
+                                    value="PERSONAL"
+                                    checked
+                                >
+
+                                <span>
+                                    Personal
+                                </span>
+
+                            </label>
+
+
+                            <label class="profile-type-option">
+
+                                <input
+                                    type="radio"
+                                    name="profile_type"
+                                    value="BUSINESS"
+                                >
+
+                                <span>
+                                    Business
+                                </span>
+
+                            </label>
+
+
+                            <label class="profile-type-option">
+
+                                <input
+                                    type="radio"
+                                    name="profile_type"
+                                    value="COMPANY"
+                                >
+
+                                <span>
+                                    Company
+                                </span>
+
+                            </label>
+
+
+                            <label class="profile-type-option">
+
+                                <input
+                                    type="radio"
+                                    name="profile_type"
+                                    value="FARM"
+                                >
+
+                                <span>
+                                    Farm
+                                </span>
+
+                            </label>
+
+
+                            <label class="profile-type-option">
+
+                                <input
+                                    type="radio"
+                                    name="profile_type"
+                                    value="SHOP"
+                                >
+
+                                <span>
+                                    Shop
+                                </span>
+
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-section">
+
+                        <h2>
+                            Basic Information
+                        </h2>
+
+
+                        <div class="form-grid">
+
+                            <div class="form-field">
+
+                                <label for="masterId">
+                                    Master Identity ID
+                                </label>
+
+                                <input
+                                    id="masterId"
+                                    name="master_id"
+                                    type="text"
+                                    required
+                                    placeholder="Enter master identity ID"
+                                >
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="profileId">
+                                    Profile ID
+                                </label>
+
+                                <input
+                                    id="profileId"
+                                    name="profile_id"
+                                    type="text"
+                                    required
+                                    placeholder="Enter profile ID"
+                                >
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="profileName">
+                                    Profile Name
+                                </label>
+
+                                <input
+                                    id="profileName"
+                                    name="profile_name"
+                                    type="text"
+                                    required
+                                    placeholder="Enter profile name"
+                                >
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="displayName">
+                                    Display Name
+                                </label>
+
+                                <input
+                                    id="displayName"
+                                    name="display_name"
+                                    type="text"
+                                    placeholder="Public display name"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-field">
+
+                            <label for="description">
+                                Description
+                            </label>
+
+                            <textarea
+                                id="description"
+                                name="description"
+                                rows="6"
+                                placeholder="Describe this profile..."
+                            ></textarea>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-section">
+
+                        <h2>
+                            Language & Location
+                        </h2>
+
+
+                        <div class="form-grid">
+
+                            <div class="form-field">
+
+                                <label for="language">
+                                    Language
+                                </label>
+
+                                <input
+                                    id="language"
+                                    name="language"
+                                    type="text"
+                                    value="en"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="country">
+                                    Country
+                                </label>
+
+                                <input
+                                    id="country"
+                                    name="country"
+                                    type="text"
+                                    placeholder="Country"
+                                >
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="state">
+                                    State
+                                </label>
+
+                                <input
+                                    id="state"
+                                    name="state"
+                                    type="text"
+                                    placeholder="State"
+                                >
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="city">
+                                    City
+                                </label>
+
+                                <input
+                                    id="city"
+                                    name="city"
+                                    type="text"
+                                    placeholder="City"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-section">
+
+                        <h2>
+                            Additional Information
+                        </h2>
+
+                        <p>
+                            Optional structured information
+                            can be added to this profile.
+                        </p>
+
+
+                        <div class="form-field">
+
+                            <label for="metadata">
+                                Profile Metadata
+                            </label>
+
+                            <textarea
+                                id="metadata"
+                                name="metadata"
+                                rows="8"
+                                placeholder='{"skills":[],"interests":[],"availability":"AVAILABLE"}'
+                            ></textarea>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="profileFormMessage"
+                        class="form-message"
+                        aria-live="polite"
+                    ></div>
+
+
+                    <div class="form-actions">
+
+                        <a
+                            href="/"
+                            class="button button-secondary"
+                        >
+                            Cancel
+                        </a>
+
+                        <button
+                            type="submit"
+                            class="button button-primary"
+                        >
+                            Create Profile
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer class="site-footer">
+
+        <div class="container footer-inner">
+
+            <span>
+                MAIN BASE FOUNDATION
+            </span>
+
+            <span>
+                Web • Android • iOS
+            </span>
+
+        </div>
+
+    </footer>
+
+
+    <script src="profile-create.js"></script>
+
+</body>
+
+</html>
