@@ -1,288 +1,763 @@
-"""DNS service layer."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - DNS Service
 
-from __future__ import annotations
+DNS zone and record lifecycle management.
+"""
 
-from datetime import datetime, timezone
+import datetime
+import json
+from typing import Any, Dict, List, Optional
 
-from backend.database.controller import DatabaseController
-
-from .model import DNSRecord, DNSZone
+from backend.database.connection import get_connection
+from backend.infrastructure.dns.model import DNSRecordInfo, DNSZoneInfo
 
 
 class DNSService:
+    """
+    Manages DNS zones and DNS records inside the
+    infrastructure control plane.
+
+    This service manages DNS configuration records.
+    Actual authoritative DNS execution will be connected
+    to the real DNS infrastructure later.
+    """
+
+    ALLOWED_ZONE_TYPES = {
+        "PRIMARY",
+        "SECONDARY",
+    }
+
+    ALLOWED_RECORD_TYPES = {
+        "A",
+        "AAAA",
+        "CNAME",
+        "MX",
+        "TXT",
+        "NS",
+        "SRV",
+        "CAA",
+    }
+
+    ALLOWED_STATUS = {
+        "ACTIVE",
+        "PENDING",
+        "SUSPENDED",
+        "DISABLED",
+    }
+
+    ALLOWED_DNS_STATUS = {
+        "PENDING",
+        "PROPAGATING",
+        "ACTIVE",
+        "FAILED",
+    }
+
+    TABLE_ZONE = "infrastructure_dns_zones"
+    TABLE_RECORD = "infrastructure_dns_records"
 
     def __init__(self):
-        self.database = DatabaseController()
         self.initialize()
 
     def initialize(self) -> None:
+        connection = get_connection()
 
-        self.database.execute(
-            """
-            CREATE TABLE IF NOT EXISTS dns_zones (
+        connection.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.TABLE_ZONE} (
                 zone_id TEXT PRIMARY KEY,
-                domain TEXT NOT NULL UNIQUE,
-                status TEXT DEFAULT 'ACTIVE',
-                nameservers TEXT DEFAULT '',
+                domain_name TEXT NOT NULL UNIQUE,
+
+                zone_type TEXT NOT NULL,
+
+                primary_nameserver TEXT,
+                secondary_nameserver TEXT,
+
+                nameserver_status TEXT NOT NULL,
+                dns_status TEXT NOT NULL,
+
+                status TEXT NOT NULL,
+                verified INTEGER NOT NULL DEFAULT 0,
+
+                metadata TEXT,
+
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
 
-        self.database.execute(
-            """
-            CREATE TABLE IF NOT EXISTS dns_records (
+        connection.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.TABLE_RECORD} (
                 record_id TEXT PRIMARY KEY,
-                zone_id TEXT NOT NULL,
+                domain_name TEXT NOT NULL,
+
                 record_type TEXT NOT NULL,
-                name TEXT NOT NULL,
-                content TEXT NOT NULL,
-                ttl INTEGER DEFAULT 300,
+                record_name TEXT NOT NULL,
+                record_value TEXT NOT NULL,
+
+                ttl INTEGER NOT NULL DEFAULT 3600,
                 priority INTEGER,
-                enabled INTEGER DEFAULT 1,
+
+                status TEXT NOT NULL,
+                verified INTEGER NOT NULL DEFAULT 0,
+
+                metadata TEXT,
+
                 created_at TEXT NOT NULL,
-                FOREIGN KEY(zone_id)
-                    REFERENCES dns_zones(zone_id)
-                    ON DELETE CASCADE
+                updated_at TEXT NOT NULL
             )
             """
         )
 
-    def create_zone(
-        self,
-        domain: str,
-        nameservers: list[str] | None = None,
-    ) -> DNSZone:
+        connection.commit()
 
-        existing = self.database.fetchone(
-            """
+    def _next_zone_id(self) -> str:
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
             SELECT zone_id
-            FROM dns_zones
-            WHERE domain = ?
-            """,
-            (domain,),
-        )
-
-        if existing:
-            raise ValueError(
-                f"DNS zone already exists: {domain}"
-            )
-
-        count = self.database.fetchone(
+            FROM {self.TABLE_ZONE}
+            ORDER BY rowid DESC
+            LIMIT 1
             """
-            SELECT COUNT(*) AS total
-            FROM dns_zones
-            """
-        )
-
-        zone_number = int(count["total"]) + 1
-
-        zone_id = f"DNS-ZONE-{zone_number:06d}"
-
-        now = datetime.now(timezone.utc).isoformat()
-
-        zone = DNSZone(
-            zone_id=zone_id,
-            domain=domain,
-            nameservers=nameservers or [],
-            created_at=now,
-            updated_at=now,
-        )
-
-        self.database.execute(
-            """
-            INSERT INTO dns_zones (
-                zone_id,
-                domain,
-                status,
-                nameservers,
-                created_at,
-                updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                zone.zone_id,
-                zone.domain,
-                zone.status,
-                ",".join(zone.nameservers),
-                zone.created_at,
-                zone.updated_at,
-            ),
-        )
-
-        return zone
-
-    def get_zone(
-        self,
-        zone_id: str,
-    ) -> DNSZone | None:
-
-        row = self.database.fetchone(
-            """
-            SELECT *
-            FROM dns_zones
-            WHERE zone_id = ?
-            """,
-            (zone_id,),
-        )
+        ).fetchone()
 
         if not row:
-            return None
+            return "ZONE-000001"
 
-        record_rows = self.database.fetchall(
-            """
-            SELECT *
-            FROM dns_records
-            WHERE zone_id = ?
-            ORDER BY created_at ASC
-            """,
-            (zone_id,),
+        number = int(
+            row["zone_id"].split("-")[-1]
         )
 
-        records = [
-            DNSRecord(
-                record_id=item["record_id"],
-                zone_id=item["zone_id"],
-                record_type=item["record_type"],
-                name=item["name"],
-                content=item["content"],
-                ttl=item["ttl"],
-                priority=item["priority"],
-                enabled=bool(item["enabled"]),
-                created_at=item["created_at"],
-            )
-            for item in record_rows
-        ]
+        return f"ZONE-{number + 1:06d}"
 
-        nameservers = [
-            item
-            for item in (row["nameservers"] or "").split(",")
-            if item
-        ]
+    def _next_record_id(self) -> str:
+        connection = get_connection()
 
-        return DNSZone(
+        row = connection.execute(
+            f"""
+            SELECT record_id
+            FROM {self.TABLE_RECORD}
+            ORDER BY rowid DESC
+            LIMIT 1
+            """
+        ).fetchone()
+
+        if not row:
+            return "DNS-000001"
+
+        number = int(
+            row["record_id"].split("-")[-1]
+        )
+
+        return f"DNS-{number + 1:06d}"
+
+    @staticmethod
+    def _serialize_metadata(
+        metadata: Optional[Dict[str, Any]],
+    ) -> str:
+        return json.dumps(metadata or {})
+
+    @staticmethod
+    def _deserialize_metadata(
+        value: Optional[str],
+    ) -> Dict[str, Any]:
+
+        if not value:
+            return {}
+
+        try:
+            return json.loads(value)
+        except (TypeError, ValueError):
+            return {}
+
+    def _zone_to_model(self, row) -> DNSZoneInfo:
+        return DNSZoneInfo(
             zone_id=row["zone_id"],
-            domain=row["domain"],
+            domain_name=row["domain_name"],
+            zone_type=row["zone_type"],
+            primary_nameserver=row["primary_nameserver"],
+            secondary_nameserver=row["secondary_nameserver"],
+            nameserver_status=row["nameserver_status"],
+            dns_status=row["dns_status"],
             status=row["status"],
-            nameservers=nameservers,
-            records=records,
+            verified=bool(row["verified"]),
+            metadata=self._deserialize_metadata(
+                row["metadata"]
+            ),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
 
-    def list_zones(self) -> list[DNSZone]:
-
-        rows = self.database.fetchall(
-            """
-            SELECT zone_id
-            FROM dns_zones
-            ORDER BY created_at DESC
-            """
+    def _record_to_model(self, row) -> DNSRecordInfo:
+        return DNSRecordInfo(
+            record_id=row["record_id"],
+            domain_name=row["domain_name"],
+            record_type=row["record_type"],
+            record_name=row["record_name"],
+            record_value=row["record_value"],
+            ttl=row["ttl"],
+            priority=row["priority"],
+            status=row["status"],
+            verified=bool(row["verified"]),
+            metadata=self._deserialize_metadata(
+                row["metadata"]
+            ),
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
         )
 
-        zones = []
+    # ---------------------------------------------------------
+    # ZONES
+    # ---------------------------------------------------------
 
-        for row in rows:
-            zone = self.get_zone(row["zone_id"])
-
-            if zone:
-                zones.append(zone)
-
-        return zones
-
-    def add_record(
+    def create_zone(
         self,
-        zone_id: str,
-        record_type: str,
-        name: str,
-        content: str,
-        ttl: int = 300,
-        priority: int | None = None,
-    ) -> DNSRecord:
+        domain_name: str,
+        zone_type: str = "PRIMARY",
+        primary_nameserver: Optional[str] = None,
+        secondary_nameserver: Optional[str] = None,
+        nameserver_status: str = "PENDING",
+        dns_status: str = "PENDING",
+        status: str = "ACTIVE",
+        verified: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> DNSZoneInfo:
 
-        zone = self.get_zone(zone_id)
+        if not domain_name:
+            raise ValueError("Domain name is required")
 
-        if not zone:
+        if zone_type not in self.ALLOWED_ZONE_TYPES:
             raise ValueError(
-                f"DNS zone not found: {zone_id}"
+                f"Unsupported DNS zone type: {zone_type}"
             )
 
-        count = self.database.fetchone(
-            """
-            SELECT COUNT(*) AS total
-            FROM dns_records
-            """
-        )
+        if status not in self.ALLOWED_STATUS:
+            raise ValueError(
+                f"Unsupported DNS status: {status}"
+            )
 
-        record_number = int(count["total"]) + 1
+        if dns_status not in self.ALLOWED_DNS_STATUS:
+            raise ValueError(
+                f"Unsupported DNS lifecycle status: "
+                f"{dns_status}"
+            )
 
-        record_id = f"DNS-RECORD-{record_number:06d}"
+        zone_id = self._next_zone_id()
+        now = datetime.datetime.utcnow().isoformat()
 
-        now = datetime.now(timezone.utc).isoformat()
+        connection = get_connection()
 
-        record = DNSRecord(
-            record_id=record_id,
-            zone_id=zone_id,
-            record_type=record_type.upper(),
-            name=name,
-            content=content,
-            ttl=ttl,
-            priority=priority,
-            created_at=now,
-        )
-
-        self.database.execute(
-            """
-            INSERT INTO dns_records (
-                record_id,
+        connection.execute(
+            f"""
+            INSERT INTO {self.TABLE_ZONE} (
                 zone_id,
-                record_type,
-                name,
-                content,
-                ttl,
-                priority,
-                enabled,
-                created_at
+                domain_name,
+                zone_type,
+                primary_nameserver,
+                secondary_nameserver,
+                nameserver_status,
+                dns_status,
+                status,
+                verified,
+                metadata,
+                created_at,
+                updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                record.record_id,
-                record.zone_id,
-                record.record_type,
-                record.name,
-                record.content,
-                record.ttl,
-                record.priority,
-                1,
-                record.created_at,
+                zone_id,
+                domain_name,
+                zone_type,
+                primary_nameserver,
+                secondary_nameserver,
+                nameserver_status,
+                dns_status,
+                status,
+                int(verified),
+                self._serialize_metadata(metadata),
+                now,
+                now,
             ),
         )
 
-        self.database.execute(
-            """
-            UPDATE dns_zones
-            SET updated_at = ?
+        connection.commit()
+
+        return self.get_zone(zone_id)
+
+    def get_zone(
+        self,
+        zone_id: str,
+    ) -> Optional[DNSZoneInfo]:
+
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
+            SELECT *
+            FROM {self.TABLE_ZONE}
             WHERE zone_id = ?
             """,
-            (now, zone_id),
+            (zone_id,),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        return self._zone_to_model(row)
+
+    def get_zone_by_domain(
+        self,
+        domain_name: str,
+    ) -> Optional[DNSZoneInfo]:
+
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
+            SELECT *
+            FROM {self.TABLE_ZONE}
+            WHERE domain_name = ?
+            """,
+            (domain_name,),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        return self._zone_to_model(row)
+
+    def list_zones(
+        self,
+        status: Optional[str] = None,
+    ) -> List[DNSZoneInfo]:
+
+        connection = get_connection()
+
+        if status:
+            rows = connection.execute(
+                f"""
+                SELECT *
+                FROM {self.TABLE_ZONE}
+                WHERE status = ?
+                ORDER BY rowid ASC
+                """,
+                (status,),
+            ).fetchall()
+        else:
+            rows = connection.execute(
+                f"""
+                SELECT *
+                FROM {self.TABLE_ZONE}
+                ORDER BY rowid ASC
+                """
+            ).fetchall()
+
+        return [
+            self._zone_to_model(row)
+            for row in rows
+        ]
+
+    def update_zone(
+        self,
+        zone_id: str,
+        **updates,
+    ) -> Optional[DNSZoneInfo]:
+
+        current = self.get_zone(zone_id)
+
+        if not current:
+            return None
+
+        allowed_fields = {
+            "primary_nameserver",
+            "secondary_nameserver",
+            "nameserver_status",
+            "dns_status",
+            "status",
+            "verified",
+            "metadata",
+        }
+
+        updates = {
+            key: value
+            for key, value in updates.items()
+            if key in allowed_fields
+        }
+
+        if not updates:
+            return current
+
+        if "status" in updates:
+            if updates["status"] not in self.ALLOWED_STATUS:
+                raise ValueError(
+                    f"Unsupported DNS status: "
+                    f"{updates['status']}"
+                )
+
+        if "dns_status" in updates:
+            if updates["dns_status"] not in self.ALLOWED_DNS_STATUS:
+                raise ValueError(
+                    f"Unsupported DNS lifecycle status: "
+                    f"{updates['dns_status']}"
+                )
+
+        if "metadata" in updates:
+            updates["metadata"] = self._serialize_metadata(
+                updates["metadata"]
+            )
+
+        if "verified" in updates:
+            updates["verified"] = int(
+                updates["verified"]
+            )
+
+        updates["updated_at"] = (
+            datetime.datetime.utcnow().isoformat()
         )
 
-        return record
+        set_clause = ", ".join(
+            f"{field} = ?"
+            for field in updates
+        )
+
+        values = list(updates.values())
+        values.append(zone_id)
+
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            UPDATE {self.TABLE_ZONE}
+            SET {set_clause}
+            WHERE zone_id = ?
+            """,
+            values,
+        )
+
+        connection.commit()
+
+        return self.get_zone(zone_id)
+
+    def delete_zone(
+        self,
+        zone_id: str,
+    ) -> bool:
+
+        connection = get_connection()
+
+        cursor = connection.execute(
+            f"""
+            DELETE FROM {self.TABLE_ZONE}
+            WHERE zone_id = ?
+            """,
+            (zone_id,),
+        )
+
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    # ---------------------------------------------------------
+    # DNS RECORDS
+    # ---------------------------------------------------------
+
+    def create_record(
+        self,
+        domain_name: str,
+        record_type: str,
+        record_name: str,
+        record_value: str,
+        ttl: int = 3600,
+        priority: Optional[int] = None,
+        status: str = "ACTIVE",
+        verified: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> DNSRecordInfo:
+
+        if not domain_name:
+            raise ValueError("Domain name is required")
+
+        if record_type not in self.ALLOWED_RECORD_TYPES:
+            raise ValueError(
+                f"Unsupported DNS record type: "
+                f"{record_type}"
+            )
+
+        if not record_name:
+            raise ValueError("Record name is required")
+
+        if not record_value:
+            raise ValueError("Record value is required")
+
+        if ttl < 0:
+            raise ValueError("TTL cannot be negative")
+
+        if status not in self.ALLOWED_STATUS:
+            raise ValueError(
+                f"Unsupported DNS status: {status}"
+            )
+
+        record_id = self._next_record_id()
+        now = datetime.datetime.utcnow().isoformat()
+
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            INSERT INTO {self.TABLE_RECORD} (
+                record_id,
+                domain_name,
+                record_type,
+                record_name,
+                record_value,
+                ttl,
+                priority,
+                status,
+                verified,
+                metadata,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                record_id,
+                domain_name,
+                record_type,
+                record_name,
+                record_value,
+                ttl,
+                priority,
+                status,
+                int(verified),
+                self._serialize_metadata(metadata),
+                now,
+                now,
+            ),
+        )
+
+        connection.commit()
+
+        return self.get_record(record_id)
+
+    def get_record(
+        self,
+        record_id: str,
+    ) -> Optional[DNSRecordInfo]:
+
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
+            SELECT *
+            FROM {self.TABLE_RECORD}
+            WHERE record_id = ?
+            """,
+            (record_id,),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        return self._record_to_model(row)
+
+    def list_records(
+        self,
+        domain_name: Optional[str] = None,
+        record_type: Optional[str] = None,
+    ) -> List[DNSRecordInfo]:
+
+        connection = get_connection()
+
+        conditions = []
+        values = []
+
+        if domain_name:
+            conditions.append("domain_name = ?")
+            values.append(domain_name)
+
+        if record_type:
+            conditions.append("record_type = ?")
+            values.append(record_type)
+
+        where_clause = ""
+
+        if conditions:
+            where_clause = (
+                "WHERE " + " AND ".join(conditions)
+            )
+
+        rows = connection.execute(
+            f"""
+            SELECT *
+            FROM {self.TABLE_RECORD}
+            {where_clause}
+            ORDER BY rowid ASC
+            """,
+            tuple(values),
+        ).fetchall()
+
+        return [
+            self._record_to_model(row)
+            for row in rows
+        ]
+
+    def update_record(
+        self,
+        record_id: str,
+        **updates,
+    ) -> Optional[DNSRecordInfo]:
+
+        current = self.get_record(record_id)
+
+        if not current:
+            return None
+
+        allowed_fields = {
+            "record_name",
+            "record_value",
+            "ttl",
+            "priority",
+            "status",
+            "verified",
+            "metadata",
+        }
+
+        updates = {
+            key: value
+            for key, value in updates.items()
+            if key in allowed_fields
+        }
+
+        if not updates:
+            return current
+
+        if "ttl" in updates:
+            if updates["ttl"] < 0:
+                raise ValueError(
+                    "TTL cannot be negative"
+                )
+
+        if "status" in updates:
+            if updates["status"] not in self.ALLOWED_STATUS:
+                raise ValueError(
+                    f"Unsupported DNS status: "
+                    f"{updates['status']}"
+                )
+
+        if "metadata" in updates:
+            updates["metadata"] = self._serialize_metadata(
+                updates["metadata"]
+            )
+
+        if "verified" in updates:
+            updates["verified"] = int(
+                updates["verified"]
+            )
+
+        updates["updated_at"] = (
+            datetime.datetime.utcnow().isoformat()
+        )
+
+        set_clause = ", ".join(
+            f"{field} = ?"
+            for field in updates
+        )
+
+        values = list(updates.values())
+        values.append(record_id)
+
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            UPDATE {self.TABLE_RECORD}
+            SET {set_clause}
+            WHERE record_id = ?
+            """,
+            values,
+        )
+
+        connection.commit()
+
+        return self.get_record(record_id)
 
     def delete_record(
         self,
         record_id: str,
     ) -> bool:
 
-        self.database.execute(
-            """
-            DELETE FROM dns_records
+        connection = get_connection()
+
+        cursor = connection.execute(
+            f"""
+            DELETE FROM {self.TABLE_RECORD}
             WHERE record_id = ?
             """,
             (record_id,),
         )
 
-        return True
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    # ---------------------------------------------------------
+    # DNS STATE OPERATIONS
+    # ---------------------------------------------------------
+
+    def activate_zone(
+        self,
+        zone_id: str,
+    ) -> Optional[DNSZoneInfo]:
+
+        return self.update_zone(
+            zone_id,
+            dns_status="ACTIVE",
+            nameserver_status="ACTIVE",
+            status="ACTIVE",
+        )
+
+    def set_zone_propagating(
+        self,
+        zone_id: str,
+    ) -> Optional[DNSZoneInfo]:
+
+        return self.update_zone(
+            zone_id,
+            dns_status="PROPAGATING",
+        )
+
+    def suspend_zone(
+        self,
+        zone_id: str,
+    ) -> Optional[DNSZoneInfo]:
+
+        return self.update_zone(
+            zone_id,
+            status="SUSPENDED",
+        )
+
+    def verify_zone(
+        self,
+        zone_id: str,
+    ) -> Optional[DNSZoneInfo]:
+
+        return self.update_zone(
+            zone_id,
+            verified=True,
+        )
+
+    def verify_record(
+        self,
+        record_id: str,
+    ) -> Optional[DNSRecordInfo]:
+
+        return self.update_record(
+            record_id,
+            verified=True,
+        )
