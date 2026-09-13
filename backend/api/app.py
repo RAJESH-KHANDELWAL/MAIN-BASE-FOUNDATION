@@ -18,6 +18,7 @@ from backend.api.integration_connections import (
 )
 from backend.api.ecosystem import EcosystemAPI
 from backend.api.storage import StorageAPI
+from backend.api.opportunities import router as opportunities_router
 
 
 app = FastAPI(
@@ -56,6 +57,7 @@ app.include_router(supreme_router)
 app.include_router(identity_router)
 app.include_router(auth_router)
 app.include_router(roles_router)
+app.include_router(opportunities_router)
 
 
 # ==========================
