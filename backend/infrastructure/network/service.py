@@ -1,200 +1,463 @@
-"""Network infrastructure service."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - Network Service
 
-from __future__ import annotations
+Network inventory and lifecycle management.
+"""
 
-from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from backend.database.controller import DatabaseController
-
-from .model import NetworkInfo
+from backend.database.connection import get_connection
+from backend.infrastructure.network.model import NetworkInfo
 
 
 class NetworkService:
+    """
+    Manages network inventory inside the infrastructure
+    control plane.
+
+    This service stores network configuration records.
+    Actual network provisioning will be connected later.
+    """
+
+    ALLOWED_NETWORK_TYPES = {
+        "PUBLIC",
+        "PRIVATE",
+        "INTERNAL",
+        "MANAGEMENT",
+        "STORAGE",
+    }
+
+    ALLOWED_STATUS = {
+        "ACTIVE",
+        "PROVISIONING",
+        "MAINTENANCE",
+        "SUSPENDED",
+        "OFFLINE",
+        "TERMINATED",
+    }
+
+    TABLE_NAME = "infrastructure_networks"
+
     def __init__(self):
-        self.database = DatabaseController()
         self.initialize()
 
     def initialize(self) -> None:
-        self.database.execute(
-            """
-            CREATE TABLE IF NOT EXISTS networks (
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.TABLE_NAME} (
                 network_id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
+                name TEXT NOT NULL UNIQUE,
+
                 network_type TEXT NOT NULL,
-                server_id TEXT DEFAULT '',
-                provider TEXT DEFAULT '',
-                region TEXT DEFAULT '',
-                public_ipv4 TEXT DEFAULT '',
-                public_ipv6 TEXT DEFAULT '',
-                subnet TEXT DEFAULT '',
-                gateway TEXT DEFAULT '',
-                bandwidth_mbps REAL DEFAULT 0,
-                status TEXT DEFAULT 'PLANNED',
-                description TEXT DEFAULT '',
+                provider TEXT,
+
+                region TEXT,
+                datacenter TEXT,
+
+                cidr TEXT,
+                gateway TEXT,
+                subnet_mask TEXT,
+
+                dns_primary TEXT,
+                dns_secondary TEXT,
+
+                vlan_id INTEGER,
+
+                status TEXT NOT NULL,
+                verified INTEGER NOT NULL DEFAULT 0,
+
+                metadata TEXT,
+
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
 
+        connection.commit()
+
+    def _next_id(self) -> str:
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
+            SELECT network_id
+            FROM {self.TABLE_NAME}
+            ORDER BY rowid DESC
+            LIMIT 1
+            """
+        ).fetchone()
+
+        if not row:
+            return "NET-000001"
+
+        last_id = row["network_id"]
+        number = int(last_id.split("-")[-1])
+
+        return f"NET-{number + 1:06d}"
+
+    def _serialize_metadata(
+        self,
+        metadata: Optional[Dict[str, Any]],
+    ) -> str:
+        import json
+
+        return json.dumps(metadata or {})
+
+    def _deserialize_metadata(
+        self,
+        value: Optional[str],
+    ) -> Dict[str, Any]:
+        import json
+
+        if not value:
+            return {}
+
+        try:
+            return json.loads(value)
+        except (TypeError, ValueError):
+            return {}
+
+    def _row_to_model(self, row) -> NetworkInfo:
+        return NetworkInfo(
+            network_id=row["network_id"],
+            name=row["name"],
+            network_type=row["network_type"],
+            provider=row["provider"],
+            region=row["region"],
+            datacenter=row["datacenter"],
+            cidr=row["cidr"],
+            gateway=row["gateway"],
+            subnet_mask=row["subnet_mask"],
+            dns_primary=row["dns_primary"],
+            dns_secondary=row["dns_secondary"],
+            vlan_id=row["vlan_id"],
+            status=row["status"],
+            verified=bool(row["verified"]),
+            metadata=self._deserialize_metadata(row["metadata"]),
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
     def create(
         self,
         name: str,
-        network_type: str,
-        server_id: str = "",
-        provider: str = "",
-        region: str = "",
-        public_ipv4: str = "",
-        public_ipv6: str = "",
-        subnet: str = "",
-        gateway: str = "",
-        bandwidth_mbps: float = 0,
-        status: str = "PLANNED",
-        description: str = "",
+        network_type: str = "PUBLIC",
+        provider: Optional[str] = None,
+        region: Optional[str] = None,
+        datacenter: Optional[str] = None,
+        cidr: Optional[str] = None,
+        gateway: Optional[str] = None,
+        subnet_mask: Optional[str] = None,
+        dns_primary: Optional[str] = None,
+        dns_secondary: Optional[str] = None,
+        vlan_id: Optional[int] = None,
+        status: str = "ACTIVE",
+        verified: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> NetworkInfo:
 
-        timestamp = datetime.now(timezone.utc).isoformat()
+        if not name:
+            raise ValueError("Network name is required")
 
-        row = self.database.fetchone(
-            """
-            SELECT COUNT(*) AS total
-            FROM networks
-            """
-        )
+        if network_type not in self.ALLOWED_NETWORK_TYPES:
+            raise ValueError(
+                f"Unsupported network type: {network_type}"
+            )
 
-        number = int(row["total"]) + 1 if row else 1
-        network_id = f"NET-{number:06d}"
+        if status not in self.ALLOWED_STATUS:
+            raise ValueError(
+                f"Unsupported network status: {status}"
+            )
 
-        self.database.execute(
-            """
-            INSERT INTO networks (
+        network_id = self._next_id()
+
+        import datetime
+
+        now = datetime.datetime.utcnow().isoformat()
+
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            INSERT INTO {self.TABLE_NAME} (
                 network_id,
                 name,
                 network_type,
-                server_id,
                 provider,
                 region,
-                public_ipv4,
-                public_ipv6,
-                subnet,
+                datacenter,
+                cidr,
                 gateway,
-                bandwidth_mbps,
+                subnet_mask,
+                dns_primary,
+                dns_secondary,
+                vlan_id,
                 status,
-                description,
+                verified,
+                metadata,
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 network_id,
                 name,
                 network_type,
-                server_id,
                 provider,
                 region,
-                public_ipv4,
-                public_ipv6,
-                subnet,
+                datacenter,
+                cidr,
                 gateway,
-                bandwidth_mbps,
+                subnet_mask,
+                dns_primary,
+                dns_secondary,
+                vlan_id,
                 status,
-                description,
-                timestamp,
-                timestamp,
+                int(verified),
+                self._serialize_metadata(metadata),
+                now,
+                now,
             ),
         )
 
-        return NetworkInfo(
-            network_id=network_id,
-            name=name,
-            network_type=network_type,
-            server_id=server_id,
-            provider=provider,
-            region=region,
-            public_ipv4=public_ipv4,
-            public_ipv6=public_ipv6,
-            subnet=subnet,
-            gateway=gateway,
-            bandwidth_mbps=bandwidth_mbps,
-            status=status,
-            description=description,
-            created_at=timestamp,
-            updated_at=timestamp,
-        )
+        connection.commit()
 
-    def get(self, network_id: str) -> NetworkInfo | None:
-        row = self.database.fetchone(
-            """
+        return self.get(network_id)
+
+    def get(
+        self,
+        network_id: str,
+    ) -> Optional[NetworkInfo]:
+
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
             SELECT *
-            FROM networks
+            FROM {self.TABLE_NAME}
             WHERE network_id = ?
             """,
             (network_id,),
-        )
+        ).fetchone()
 
         if not row:
             return None
 
-        return NetworkInfo(**dict(row))
+        return self._row_to_model(row)
 
-    def list_all(self) -> list[NetworkInfo]:
-        rows = self.database.fetchall(
-            """
+    def get_by_name(
+        self,
+        name: str,
+    ) -> Optional[NetworkInfo]:
+
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
             SELECT *
-            FROM networks
-            ORDER BY created_at DESC
-            """
-        )
+            FROM {self.TABLE_NAME}
+            WHERE name = ?
+            """,
+            (name,),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        return self._row_to_model(row)
+
+    def list(
+        self,
+        status: Optional[str] = None,
+        network_type: Optional[str] = None,
+    ) -> List[NetworkInfo]:
+
+        connection = get_connection()
+
+        conditions = []
+        values = []
+
+        if status:
+            conditions.append("status = ?")
+            values.append(status)
+
+        if network_type:
+            conditions.append("network_type = ?")
+            values.append(network_type)
+
+        where_clause = ""
+
+        if conditions:
+            where_clause = "WHERE " + " AND ".join(conditions)
+
+        rows = connection.execute(
+            f"""
+            SELECT *
+            FROM {self.TABLE_NAME}
+            {where_clause}
+            ORDER BY rowid ASC
+            """,
+            tuple(values),
+        ).fetchall()
 
         return [
-            NetworkInfo(**dict(row))
+            self._row_to_model(row)
             for row in rows
         ]
 
-    def update_status(
+    def list_by_type(
+        self,
+        network_type: str,
+    ) -> List[NetworkInfo]:
+
+        return self.list(
+            network_type=network_type,
+        )
+
+    def exists(
         self,
         network_id: str,
-        status: str,
-    ) -> NetworkInfo | None:
+    ) -> bool:
 
-        timestamp = datetime.now(timezone.utc).isoformat()
+        return self.get(network_id) is not None
 
-        self.database.execute(
-            """
-            UPDATE networks
-            SET status = ?,
-                updated_at = ?
+    def delete(
+        self,
+        network_id: str,
+    ) -> bool:
+
+        connection = get_connection()
+
+        cursor = connection.execute(
+            f"""
+            DELETE FROM {self.TABLE_NAME}
             WHERE network_id = ?
             """,
-            (
-                status,
-                timestamp,
-                network_id,
-            ),
+            (network_id,),
         )
+
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    def update(
+        self,
+        network_id: str,
+        **updates,
+    ) -> Optional[NetworkInfo]:
+
+        current = self.get(network_id)
+
+        if not current:
+            return None
+
+        allowed_fields = {
+            "provider",
+            "region",
+            "datacenter",
+            "cidr",
+            "gateway",
+            "subnet_mask",
+            "dns_primary",
+            "dns_secondary",
+            "vlan_id",
+            "status",
+            "verified",
+            "metadata",
+        }
+
+        updates = {
+            key: value
+            for key, value in updates.items()
+            if key in allowed_fields
+        }
+
+        if not updates:
+            return current
+
+        if "status" in updates:
+            if updates["status"] not in self.ALLOWED_STATUS:
+                raise ValueError(
+                    f"Unsupported network status: "
+                    f"{updates['status']}"
+                )
+
+        import datetime
+
+        updates["updated_at"] = datetime.datetime.utcnow().isoformat()
+
+        if "metadata" in updates:
+            updates["metadata"] = self._serialize_metadata(
+                updates["metadata"]
+            )
+
+        if "verified" in updates:
+            updates["verified"] = int(updates["verified"])
+
+        set_clause = ", ".join(
+            f"{field} = ?"
+            for field in updates
+        )
+
+        values = list(updates.values())
+        values.append(network_id)
+
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            UPDATE {self.TABLE_NAME}
+            SET {set_clause}
+            WHERE network_id = ?
+            """,
+            values,
+        )
+
+        connection.commit()
 
         return self.get(network_id)
 
-    def delete(self, network_id: str) -> bool:
-        row = self.database.fetchone(
-            """
-            SELECT network_id
-            FROM networks
-            WHERE network_id = ?
-            """,
-            (network_id,),
+    def set_active(
+        self,
+        network_id: str,
+    ) -> Optional[NetworkInfo]:
+
+        return self.update(
+            network_id,
+            status="ACTIVE",
         )
 
-        if not row:
-            return False
+    def set_maintenance(
+        self,
+        network_id: str,
+    ) -> Optional[NetworkInfo]:
 
-        self.database.execute(
-            """
-            DELETE FROM networks
-            WHERE network_id = ?
-            """,
-            (network_id,),
+        return self.update(
+            network_id,
+            status="MAINTENANCE",
         )
 
-        return True
+    def suspend(
+        self,
+        network_id: str,
+    ) -> Optional[NetworkInfo]:
+
+        return self.update(
+            network_id,
+            status="SUSPENDED",
+        )
+
+    def set_offline(
+        self,
+        network_id: str,
+    ) -> Optional[NetworkInfo]:
+
+        return self.update(
+            network_id,
+            status="OFFLINE",
+        )
