@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="MAIN BASE FOUNDATION — platform health and integration review."
+    >
+
+    <title>Platform Review | MAIN BASE FOUNDATION</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+
+<body>
+
+    <header class="site-header">
+
+        <div class="container header-inner">
+
+            <a href="/" class="logo">
+                MAIN BASE FOUNDATION
+            </a>
+
+            <nav class="navigation">
+
+                <a href="/">
+                    Home
+                </a>
+
+                <a href="/#opportunities">
+                    Opportunities
+                </a>
+
+                <a href="/#profiles">
+                    Profiles
+                </a>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <section class="section">
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <div class="eyebrow">
+                        PLATFORM REVIEW
+                    </div>
+
+                    <h1>
+                        System health &amp; integration review.
+                    </h1>
+
+                    <p>
+                        Check the public frontend, backend API,
+                        database-backed services and core platform
+                        endpoints from one place.
+                    </p>
+
+                </div>
+
+
+                <div class="review-toolbar">
+
+                    <button
+                        type="button"
+                        id="runReviewButton"
+                        class="button button-primary"
+                    >
+                        Run Full Review
+                    </button>
+
+                    <span
+                        id="reviewTime"
+                        class="review-time"
+                    >
+                        Not checked yet
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="reviewSummary"
+                    class="review-summary"
+                >
+
+                    <div class="review-summary-card">
+
+                        <strong id="reviewPassed">
+                            —
+                        </strong>
+
+                        <span>
+                            Passed
+                        </span>
+
+                    </div>
+
+
+                    <div class="review-summary-card">
+
+                        <strong id="reviewFailed">
+                            —
+                        </strong>
+
+                        <span>
+                            Failed
+                        </span>
+
+                    </div>
+
+
+                    <div class="review-summary-card">
+
+                        <strong id="reviewTotal">
+                            —
+                        </strong>
+
+                        <span>
+                            Total Checks
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="reviewList"
+                    class="review-list"
+                >
+
+                    <div class="loading-card">
+
+                        Click
+                        <strong>
+                            Run Full Review
+                        </strong>
+                        to check the platform.
+
+                    </div>
+
+                </div>
+
+
+                <section class="review-notes">
+
+                    <h2>
+                        Review rule
+                    </h2>
+
+                    <p>
+                        A module is not considered ready merely
+                        because its file exists. The frontend,
+                        API route and backend response must work
+                        together before the module is marked
+                        as operational.
+                    </p>
+
+                </section>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer class="site-footer">
+
+        <div class="container footer-inner">
+
+            <span>
+                MAIN BASE FOUNDATION
+            </span>
+
+            <span>
+                Platform Review
+            </span>
+
+        </div>
+
+    </footer>
+
+
+    <script src="platform-review.js"></script>
+
+</body>
+
+</html>
