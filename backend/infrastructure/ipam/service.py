@@ -1,248 +1,445 @@
-"""IP Address Management service."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - IPAM Service
 
-from __future__ import annotations
+IP address inventory and lifecycle management.
+"""
 
-from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from backend.database.controller import DatabaseController
+from backend.database.connection import get_connection
+from backend.infrastructure.ipam.model import IPAddressInfo
 
-from .model import IPAddressInfo
 
+class IPAMService:
+    """
+    Manages IP address inventory inside the infrastructure
+    control plane.
 
-class IPAddressService:
+    This service manages IP records only.
+    Actual IP allocation from a real network/provider will
+    be connected later.
+    """
+
+    ALLOWED_ADDRESS_FAMILIES = {
+        "IPv4",
+        "IPv6",
+    }
+
+    ALLOWED_ALLOCATION_TYPES = {
+        "DEDICATED",
+        "SHARED",
+        "RESERVED",
+    }
+
+    ALLOWED_STATUS = {
+        "AVAILABLE",
+        "ALLOCATED",
+        "RESERVED",
+        "ACTIVE",
+        "SUSPENDED",
+        "RELEASED",
+    }
+
+    TABLE_NAME = "infrastructure_ip_addresses"
+
     def __init__(self):
-        self.database = DatabaseController()
         self.initialize()
 
     def initialize(self) -> None:
-        self.database.execute(
-            """
-            CREATE TABLE IF NOT EXISTS ip_addresses (
-                ip_id TEXT PRIMARY KEY,
-                address TEXT NOT NULL UNIQUE,
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.TABLE_NAME} (
+                ip_address_id TEXT PRIMARY KEY,
+                ip_address TEXT NOT NULL UNIQUE,
                 address_family TEXT NOT NULL,
-                ip_type TEXT DEFAULT 'PUBLIC',
-                network_id TEXT DEFAULT '',
-                server_id TEXT DEFAULT '',
-                provider TEXT DEFAULT '',
-                region TEXT DEFAULT '',
-                status TEXT DEFAULT 'PLANNED',
-                allocation_type TEXT DEFAULT 'DYNAMIC',
-                description TEXT DEFAULT '',
+                allocation_type TEXT NOT NULL,
+                provider TEXT,
+
+                server_id TEXT,
+                hosting_id TEXT,
+                domain_id TEXT,
+
+                network_id TEXT,
+                gateway TEXT,
+                subnet_mask TEXT,
+
+                reverse_dns TEXT,
+
+                status TEXT NOT NULL,
+                verified INTEGER NOT NULL DEFAULT 0,
+
+                metadata TEXT,
+
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
 
+        connection.commit()
+
+    def _next_id(self) -> str:
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
+            SELECT ip_address_id
+            FROM {self.TABLE_NAME}
+            ORDER BY rowid DESC
+            LIMIT 1
+            """
+        ).fetchone()
+
+        if not row:
+            return "IP-000001"
+
+        last_id = row["ip_address_id"]
+        number = int(last_id.split("-")[-1])
+
+        return f"IP-{number + 1:06d}"
+
+    def _serialize_metadata(self, metadata: Optional[Dict[str, Any]]) -> str:
+        import json
+
+        return json.dumps(metadata or {})
+
+    def _deserialize_metadata(self, value: Optional[str]) -> Dict[str, Any]:
+        import json
+
+        if not value:
+            return {}
+
+        try:
+            return json.loads(value)
+        except (TypeError, ValueError):
+            return {}
+
+    def _row_to_model(self, row) -> IPAddressInfo:
+        return IPAddressInfo(
+            ip_address_id=row["ip_address_id"],
+            ip_address=row["ip_address"],
+            address_family=row["address_family"],
+            allocation_type=row["allocation_type"],
+            provider=row["provider"],
+            server_id=row["server_id"],
+            hosting_id=row["hosting_id"],
+            domain_id=row["domain_id"],
+            network_id=row["network_id"],
+            gateway=row["gateway"],
+            subnet_mask=row["subnet_mask"],
+            reverse_dns=row["reverse_dns"],
+            status=row["status"],
+            verified=bool(row["verified"]),
+            metadata=self._deserialize_metadata(row["metadata"]),
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
     def create(
         self,
-        address: str,
-        address_family: str,
-        ip_type: str = "PUBLIC",
-        network_id: str = "",
-        server_id: str = "",
-        provider: str = "",
-        region: str = "",
-        status: str = "PLANNED",
-        allocation_type: str = "DYNAMIC",
-        description: str = "",
+        ip_address: str,
+        address_family: str = "IPv4",
+        allocation_type: str = "DEDICATED",
+        provider: Optional[str] = None,
+        network_id: Optional[str] = None,
+        gateway: Optional[str] = None,
+        subnet_mask: Optional[str] = None,
+        reverse_dns: Optional[str] = None,
+        status: str = "AVAILABLE",
+        verified: bool = False,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> IPAddressInfo:
 
-        timestamp = datetime.now(timezone.utc).isoformat()
+        if address_family not in self.ALLOWED_ADDRESS_FAMILIES:
+            raise ValueError(
+                f"Unsupported address family: {address_family}"
+            )
 
-        existing = self.database.fetchone(
-            """
-            SELECT ip_id
-            FROM ip_addresses
-            WHERE address = ?
-            """,
-            (address,),
-        )
+        if allocation_type not in self.ALLOWED_ALLOCATION_TYPES:
+            raise ValueError(
+                f"Unsupported allocation type: {allocation_type}"
+            )
 
-        if existing:
-            raise ValueError("IP address already exists")
+        if status not in self.ALLOWED_STATUS:
+            raise ValueError(
+                f"Unsupported IP status: {status}"
+            )
 
-        row = self.database.fetchone(
-            """
-            SELECT COUNT(*) AS total
-            FROM ip_addresses
-            """
-        )
+        if not ip_address:
+            raise ValueError("IP address is required")
 
-        number = int(row["total"]) + 1 if row else 1
-        ip_id = f"IP-{number:06d}"
+        import datetime
 
-        self.database.execute(
-            """
-            INSERT INTO ip_addresses (
-                ip_id,
-                address,
+        now = datetime.datetime.utcnow().isoformat()
+        ip_address_id = self._next_id()
+
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            INSERT INTO {self.TABLE_NAME} (
+                ip_address_id,
+                ip_address,
                 address_family,
-                ip_type,
-                network_id,
-                server_id,
-                provider,
-                region,
-                status,
                 allocation_type,
-                description,
+                provider,
+                server_id,
+                hosting_id,
+                domain_id,
+                network_id,
+                gateway,
+                subnet_mask,
+                reverse_dns,
+                status,
+                verified,
+                metadata,
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                ip_id,
-                address,
+                ip_address_id,
+                ip_address,
                 address_family,
-                ip_type,
-                network_id,
-                server_id,
-                provider,
-                region,
-                status,
                 allocation_type,
-                description,
-                timestamp,
-                timestamp,
+                provider,
+                None,
+                None,
+                None,
+                network_id,
+                gateway,
+                subnet_mask,
+                reverse_dns,
+                status,
+                int(verified),
+                self._serialize_metadata(metadata),
+                now,
+                now,
             ),
         )
 
-        return IPAddressInfo(
-            ip_id=ip_id,
-            address=address,
-            address_family=address_family,
-            ip_type=ip_type,
-            network_id=network_id,
-            server_id=server_id,
-            provider=provider,
-            region=region,
-            status=status,
-            allocation_type=allocation_type,
-            description=description,
-            created_at=timestamp,
-            updated_at=timestamp,
-        )
+        connection.commit()
 
-    def get(self, ip_id: str) -> IPAddressInfo | None:
-        row = self.database.fetchone(
-            """
+        return self.get(ip_address_id)
+
+    def get(self, ip_address_id: str) -> Optional[IPAddressInfo]:
+        connection = get_connection()
+
+        row = connection.execute(
+            f"""
             SELECT *
-            FROM ip_addresses
-            WHERE ip_id = ?
+            FROM {self.TABLE_NAME}
+            WHERE ip_address_id = ?
             """,
-            (ip_id,),
-        )
+            (ip_address_id,),
+        ).fetchone()
 
         if not row:
             return None
 
-        return IPAddressInfo(**dict(row))
+        return self._row_to_model(row)
 
     def get_by_address(
         self,
-        address: str,
-    ) -> IPAddressInfo | None:
+        ip_address: str,
+    ) -> Optional[IPAddressInfo]:
+        connection = get_connection()
 
-        row = self.database.fetchone(
-            """
+        row = connection.execute(
+            f"""
             SELECT *
-            FROM ip_addresses
-            WHERE address = ?
+            FROM {self.TABLE_NAME}
+            WHERE ip_address = ?
             """,
-            (address,),
-        )
+            (ip_address,),
+        ).fetchone()
 
         if not row:
             return None
 
-        return IPAddressInfo(**dict(row))
+        return self._row_to_model(row)
 
-    def list_all(self) -> list[IPAddressInfo]:
-        rows = self.database.fetchall(
-            """
-            SELECT *
-            FROM ip_addresses
-            ORDER BY created_at DESC
-            """
-        )
-
-        return [
-            IPAddressInfo(**dict(row))
-            for row in rows
-        ]
-
-    def update_status(
+    def list(
         self,
-        ip_id: str,
-        status: str,
-    ) -> IPAddressInfo | None:
+        status: Optional[str] = None,
+    ) -> List[IPAddressInfo]:
+        connection = get_connection()
 
-        timestamp = datetime.now(timezone.utc).isoformat()
+        if status:
+            rows = connection.execute(
+                f"""
+                SELECT *
+                FROM {self.TABLE_NAME}
+                WHERE status = ?
+                ORDER BY rowid ASC
+                """,
+                (status,),
+            ).fetchall()
+        else:
+            rows = connection.execute(
+                f"""
+                SELECT *
+                FROM {self.TABLE_NAME}
+                ORDER BY rowid ASC
+                """
+            ).fetchall()
 
-        self.database.execute(
-            """
-            UPDATE ip_addresses
-            SET status = ?,
-                updated_at = ?
-            WHERE ip_id = ?
+        return [self._row_to_model(row) for row in rows]
+
+    def exists(self, ip_address_id: str) -> bool:
+        return self.get(ip_address_id) is not None
+
+    def delete(self, ip_address_id: str) -> bool:
+        connection = get_connection()
+
+        cursor = connection.execute(
+            f"""
+            DELETE FROM {self.TABLE_NAME}
+            WHERE ip_address_id = ?
             """,
-            (
-                status,
-                timestamp,
-                ip_id,
-            ),
+            (ip_address_id,),
         )
 
-        return self.get(ip_id)
+        connection.commit()
 
-    def update_allocation(
+        return cursor.rowcount > 0
+
+    def update(
         self,
-        ip_id: str,
-        allocation_type: str,
-        server_id: str = "",
-    ) -> IPAddressInfo | None:
+        ip_address_id: str,
+        **updates,
+    ) -> Optional[IPAddressInfo]:
 
-        timestamp = datetime.now(timezone.utc).isoformat()
+        current = self.get(ip_address_id)
 
-        self.database.execute(
-            """
-            UPDATE ip_addresses
-            SET allocation_type = ?,
-                server_id = ?,
-                updated_at = ?
-            WHERE ip_id = ?
-            """,
-            (
-                allocation_type,
-                server_id,
-                timestamp,
-                ip_id,
-            ),
+        if not current:
+            return None
+
+        allowed_fields = {
+            "provider",
+            "network_id",
+            "gateway",
+            "subnet_mask",
+            "reverse_dns",
+            "status",
+            "verified",
+            "metadata",
+        }
+
+        updates = {
+            key: value
+            for key, value in updates.items()
+            if key in allowed_fields
+        }
+
+        if not updates:
+            return current
+
+        if "status" in updates:
+            if updates["status"] not in self.ALLOWED_STATUS:
+                raise ValueError(
+                    f"Unsupported IP status: {updates['status']}"
+                )
+
+        import datetime
+
+        updates["updated_at"] = datetime.datetime.utcnow().isoformat()
+
+        if "metadata" in updates:
+            updates["metadata"] = self._serialize_metadata(
+                updates["metadata"]
+            )
+
+        if "verified" in updates:
+            updates["verified"] = int(updates["verified"])
+
+        set_clause = ", ".join(
+            f"{field} = ?" for field in updates
         )
 
-        return self.get(ip_id)
+        values = list(updates.values())
+        values.append(ip_address_id)
 
-    def delete(self, ip_id: str) -> bool:
-        row = self.database.fetchone(
-            """
-            SELECT ip_id
-            FROM ip_addresses
-            WHERE ip_id = ?
+        connection = get_connection()
+
+        connection.execute(
+            f"""
+            UPDATE {self.TABLE_NAME}
+            SET {set_clause}
+            WHERE ip_address_id = ?
             """,
-            (ip_id,),
+            values,
         )
 
-        if not row:
-            return False
+        connection.commit()
 
-        self.database.execute(
-            """
-            DELETE FROM ip_addresses
-            WHERE ip_id = ?
-            """,
-            (ip_id,),
+        return self.get(ip_address_id)
+
+    def attach_server(
+        self,
+        ip_address_id: str,
+        server_id: str,
+    ) -> Optional[IPAddressInfo]:
+
+        return self.update(
+            ip_address_id,
+            server_id=server_id,
+            status="ALLOCATED",
         )
 
-        return True
+    def attach_hosting(
+        self,
+        ip_address_id: str,
+        hosting_id: str,
+    ) -> Optional[IPAddressInfo]:
+
+        return self.update(
+            ip_address_id,
+            hosting_id=hosting_id,
+            status="ALLOCATED",
+        )
+
+    def attach_domain(
+        self,
+        ip_address_id: str,
+        domain_id: str,
+    ) -> Optional[IPAddressInfo]:
+
+        return self.update(
+            ip_address_id,
+            domain_id=domain_id,
+        )
+
+    def set_active(
+        self,
+        ip_address_id: str,
+    ) -> Optional[IPAddressInfo]:
+
+        return self.update(
+            ip_address_id,
+            status="ACTIVE",
+        )
+
+    def reserve(
+        self,
+        ip_address_id: str,
+    ) -> Optional[IPAddressInfo]:
+
+        return self.update(
+            ip_address_id,
+            status="RESERVED",
+        )
+
+    def release(
+        self,
+        ip_address_id: str,
+    ) -> Optional[IPAddressInfo]:
+
+        return self.update(
+            ip_address_id,
+            status="RELEASED",
+        )
