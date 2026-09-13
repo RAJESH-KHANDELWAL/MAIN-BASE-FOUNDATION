@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Profile | MAIN BASE FOUNDATION</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header class="site-header">
+    <div class="container header-inner">
+
+        <a href="/frontend/" class="brand">
+            MAIN BASE FOUNDATION
+        </a>
+
+        <nav class="main-nav">
+            <a href="/frontend/">Home</a>
+            <a href="/frontend/#opportunities">Opportunities</a>
+            <a href="/frontend/profile-create.html">
+                Create Profile
+            </a>
+        </nav>
+
+    </div>
+</header>
+
+
+<main>
+
+    <section class="section">
+        <div class="container">
+
+            <div id="profileLoading" class="review-status">
+                Loading profile...
+            </div>
+
+            <div
+                id="profileError"
+                class="review-error"
+                hidden
+            ></div>
+
+            <article
+                id="profileCard"
+                class="review-item"
+                hidden
+            >
+
+                <div class="review-item-header">
+
+                    <div>
+                        <p
+                            id="profileType"
+                            class="review-status"
+                        ></p>
+
+                        <h1 id="profileName"></h1>
+
+                        <p id="profileDisplayName"></p>
+                    </div>
+
+                    <div>
+                        <span
+                            id="profileVerified"
+                            class="review-status"
+                        ></span>
+                    </div>
+
+                </div>
+
+
+                <div class="review-item-meta">
+
+                    <p>
+                        <strong>Profile ID:</strong>
+                        <span id="profileId"></span>
+                    </p>
+
+                    <p>
+                        <strong>Master ID:</strong>
+                        <span id="masterId"></span>
+                    </p>
+
+                    <p>
+                        <strong>Location:</strong>
+                        <span id="profileLocation"></span>
+                    </p>
+
+                    <p>
+                        <strong>Language:</strong>
+                        <span id="profileLanguage"></span>
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        <span id="profileStatus"></span>
+                    </p>
+
+                </div>
+
+
+                <div class="review-notes">
+
+                    <h2>Description</h2>
+
+                    <p id="profileDescription"></p>
+
+                </div>
+
+
+                <div class="review-response">
+
+                    <h2>Profile Metadata</h2>
+
+                    <pre id="profileMetadata"></pre>
+
+                </div>
+
+            </article>
+
+        </div>
+    </section>
+
+</main>
+
+
+<footer class="site-footer">
+    <div class="container">
+
+        <p>
+            MAIN BASE FOUNDATION
+        </p>
+
+        <p>
+            Web • Android • iOS
+        </p>
+
+    </div>
+</footer>
+
+
+<script src="profile.js"></script>
+
+</body>
+</html>
