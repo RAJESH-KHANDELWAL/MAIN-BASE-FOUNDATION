@@ -5,67 +5,72 @@ Infrastructure - Domain Service
 Domain lifecycle and persistence service.
 """
 
+from __future__ import annotations
+
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from backend.database.connection import get_connection
+from backend.database.service import DatabaseService
 
 
 class DomainService:
     """Service layer for domain infrastructure management."""
 
-    def __init__(self):
+    TABLE_NAME = "infrastructure_domains"
+
+    def __init__(
+        self,
+        database_service: Optional[DatabaseService] = None,
+    ) -> None:
+        self.database = (
+            database_service
+            or DatabaseService()
+        )
+
         self.initialize()
 
     def initialize(self) -> None:
         """Create the domains table if it does not exist."""
 
-        conn = get_connection()
+        self.database.initialize()
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS infrastructure_domains (
+        self.database.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.TABLE_NAME} (
                 domain_id TEXT PRIMARY KEY,
                 domain_name TEXT NOT NULL UNIQUE,
-
                 registrar TEXT,
                 registration_status TEXT NOT NULL DEFAULT 'PENDING',
                 nameserver_status TEXT NOT NULL DEFAULT 'PENDING',
                 dns_status TEXT NOT NULL DEFAULT 'PENDING',
-
                 hosting_id TEXT,
                 server_id TEXT,
                 ip_address_id TEXT,
                 ssl_id TEXT,
-
                 auto_renew INTEGER NOT NULL DEFAULT 1,
                 verified INTEGER NOT NULL DEFAULT 0,
                 status TEXT NOT NULL DEFAULT 'PENDING',
-
                 metadata TEXT,
-
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
 
-        conn.commit()
-
     @staticmethod
     def _now() -> str:
         return datetime.utcnow().isoformat()
 
-    @staticmethod
-    def _next_domain_id(conn) -> str:
-        row = conn.execute(
-            """
+    def _next_domain_id(self) -> str:
+        row = self.database.fetchone(
+            f"""
             SELECT domain_id
-            FROM infrastructure_domains
-            ORDER BY domain_id DESC
+            FROM {self.TABLE_NAME}
+            ORDER BY rowid DESC
             LIMIT 1
             """
-        ).fetchone()
+        )
 
         if not row:
             return "DOM-000001"
@@ -76,14 +81,15 @@ class DomainService:
         return f"DOM-{number:06d}"
 
     @staticmethod
-    def _serialize_metadata(metadata: Optional[Dict[str, Any]]) -> str:
-        import json
-
+    def _serialize_metadata(
+        metadata: Optional[Dict[str, Any]],
+    ) -> str:
         return json.dumps(metadata or {})
 
     @staticmethod
-    def _deserialize_metadata(value: Optional[str]) -> Dict[str, Any]:
-        import json
+    def _deserialize_metadata(
+        value: Optional[str],
+    ) -> Dict[str, Any]:
 
         if not value:
             return {}
@@ -107,26 +113,24 @@ class DomainService:
         if not domain_name:
             raise ValueError("domain_name is required")
 
-        conn = get_connection()
-
-        existing = conn.execute(
-            """
+        existing = self.database.fetchone(
+            f"""
             SELECT domain_id
-            FROM infrastructure_domains
+            FROM {self.TABLE_NAME}
             WHERE domain_name = ?
             """,
             (domain_name,),
-        ).fetchone()
+        )
 
         if existing:
             raise ValueError("Domain already exists")
 
         now = self._now()
-        domain_id = self._next_domain_id(conn)
+        domain_id = self._next_domain_id()
 
-        conn.execute(
-            """
-            INSERT INTO infrastructure_domains (
+        self.database.execute(
+            f"""
+            INSERT INTO {self.TABLE_NAME} (
                 domain_id,
                 domain_name,
                 registrar,
@@ -144,7 +148,10 @@ class DomainService:
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?
+            )
             """,
             (
                 domain_id,
@@ -166,42 +173,42 @@ class DomainService:
             ),
         )
 
-        conn.commit()
-
         return self.get_domain(domain_id)
 
-    def get_domain(self, domain_id: str) -> Optional[Dict[str, Any]]:
+    def get_domain(
+        self,
+        domain_id: str,
+    ) -> Optional[Dict[str, Any]]:
         """Return a domain by ID."""
 
-        conn = get_connection()
-
-        row = conn.execute(
-            """
+        row = self.database.fetchone(
+            f"""
             SELECT *
-            FROM infrastructure_domains
+            FROM {self.TABLE_NAME}
             WHERE domain_id = ?
             """,
             (domain_id,),
-        ).fetchone()
+        )
 
         if not row:
             return None
 
         return self._row_to_dict(row)
 
-    def get_by_name(self, domain_name: str) -> Optional[Dict[str, Any]]:
+    def get_by_name(
+        self,
+        domain_name: str,
+    ) -> Optional[Dict[str, Any]]:
         """Return a domain by domain name."""
 
-        conn = get_connection()
-
-        row = conn.execute(
-            """
+        row = self.database.fetchone(
+            f"""
             SELECT *
-            FROM infrastructure_domains
+            FROM {self.TABLE_NAME}
             WHERE domain_name = ?
             """,
             (domain_name.strip().lower(),),
-        ).fetchone()
+        )
 
         if not row:
             return None
@@ -211,17 +218,18 @@ class DomainService:
     def list_domains(self) -> List[Dict[str, Any]]:
         """Return all managed domains."""
 
-        conn = get_connection()
-
-        rows = conn.execute(
-            """
+        rows = self.database.fetchall(
+            f"""
             SELECT *
-            FROM infrastructure_domains
+            FROM {self.TABLE_NAME}
             ORDER BY created_at DESC
             """
-        ).fetchall()
+        )
 
-        return [self._row_to_dict(row) for row in rows]
+        return [
+            self._row_to_dict(row)
+            for row in rows
+        ]
 
     def update_domain(
         self,
@@ -246,7 +254,6 @@ class DomainService:
         }
 
         updates = []
-
         values = []
 
         for field_name, value in fields.items():
@@ -257,10 +264,15 @@ class DomainService:
             if field_name == "metadata":
                 value = self._serialize_metadata(value)
 
-            if field_name in {"auto_renew", "verified"}:
+            if field_name in {
+                "auto_renew",
+                "verified",
+            }:
                 value = int(bool(value))
 
-            updates.append(f"{field_name} = ?")
+            updates.append(
+                f"{field_name} = ?"
+            )
             values.append(value)
 
         if not updates:
@@ -270,52 +282,48 @@ class DomainService:
         values.append(self._now())
         values.append(domain_id)
 
-        conn = get_connection()
-
-        conn.execute(
+        self.database.execute(
             f"""
-            UPDATE infrastructure_domains
+            UPDATE {self.TABLE_NAME}
             SET {", ".join(updates)}
             WHERE domain_id = ?
             """,
             values,
         )
 
-        conn.commit()
-
         return self.get_domain(domain_id)
 
-    def delete_domain(self, domain_id: str) -> bool:
+    def delete_domain(
+        self,
+        domain_id: str,
+    ) -> bool:
         """Delete a domain record."""
 
-        conn = get_connection()
-
-        cursor = conn.execute(
-            """
-            DELETE FROM infrastructure_domains
+        affected = self.database.execute(
+            f"""
+            DELETE FROM {self.TABLE_NAME}
             WHERE domain_id = ?
             """,
             (domain_id,),
         )
 
-        conn.commit()
+        return affected > 0
 
-        return cursor.rowcount > 0
-
-    def exists(self, domain_id: str) -> bool:
+    def exists(
+        self,
+        domain_id: str,
+    ) -> bool:
         """Check whether a domain exists."""
 
-        conn = get_connection()
-
-        row = conn.execute(
-            """
+        row = self.database.fetchone(
+            f"""
             SELECT 1
-            FROM infrastructure_domains
+            FROM {self.TABLE_NAME}
             WHERE domain_id = ?
             LIMIT 1
             """,
             (domain_id,),
-        ).fetchone()
+        )
 
         return row is not None
 
@@ -394,7 +402,10 @@ class DomainService:
         )
 
     @classmethod
-    def _row_to_dict(cls, row) -> Dict[str, Any]:
+    def _row_to_dict(
+        cls,
+        row,
+    ) -> Dict[str, Any]:
         return {
             "domain_id": row["domain_id"],
             "domain_name": row["domain_name"],
@@ -409,7 +420,14 @@ class DomainService:
             "auto_renew": bool(row["auto_renew"]),
             "verified": bool(row["verified"]),
             "status": row["status"],
-            "metadata": cls._deserialize_metadata(row["metadata"]),
+            "metadata": cls._deserialize_metadata(
+                row["metadata"]
+            ),
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
         }
+
+
+__all__ = [
+    "DomainService",
+]
