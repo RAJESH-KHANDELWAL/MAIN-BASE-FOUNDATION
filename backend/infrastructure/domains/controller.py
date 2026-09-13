@@ -1,85 +1,119 @@
-"""Domain infrastructure controller."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - Domain Controller
+
+Control-plane facade for domain management.
+"""
+
+from typing import Any, Dict, List, Optional
 
 from .service import DomainService
 
 
 class DomainController:
+    """Controller for domain infrastructure operations."""
+
     def __init__(self):
         self.service = DomainService()
 
-    def create(self, **kwargs) -> dict:
-        domain = self.service.create(**kwargs)
-        return domain.to_dict()
+    def create(
+        self,
+        domain_name: str,
+        registrar: Optional[str] = None,
+        auto_renew: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return self.service.create_domain(
+            domain_name=domain_name,
+            registrar=registrar,
+            auto_renew=auto_renew,
+            metadata=metadata,
+        )
 
-    def get(self, domain_id: str) -> dict | None:
-        domain = self.service.get(domain_id)
+    def get(self, domain_id: str) -> Optional[Dict[str, Any]]:
+        return self.service.get_domain(domain_id)
 
-        if not domain:
-            return None
+    def get_by_name(
+        self,
+        domain_name: str,
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.get_by_name(domain_name)
 
-        return domain.to_dict()
+    def list(self) -> List[Dict[str, Any]]:
+        return self.service.list_domains()
 
-    def get_by_domain(self, domain_name: str) -> dict | None:
-        domain = self.service.get_by_domain(domain_name)
+    def update(
+        self,
+        domain_id: str,
+        **fields: Any,
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.update_domain(
+            domain_id,
+            **fields,
+        )
 
-        if not domain:
-            return None
+    def delete(self, domain_id: str) -> bool:
+        return self.service.delete_domain(domain_id)
 
-        return domain.to_dict()
+    def exists(self, domain_id: str) -> bool:
+        return self.service.exists(domain_id)
 
-    def list(self) -> list[dict]:
-        return [
-            domain.to_dict()
-            for domain in self.service.list_all()
-        ]
+    def attach_hosting(
+        self,
+        domain_id: str,
+        hosting_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.attach_hosting(
+            domain_id,
+            hosting_id,
+        )
 
-    def update_status(
+    def attach_server(
+        self,
+        domain_id: str,
+        server_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.attach_server(
+            domain_id,
+            server_id,
+        )
+
+    def attach_ip(
+        self,
+        domain_id: str,
+        ip_address_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.attach_ip(
+            domain_id,
+            ip_address_id,
+        )
+
+    def attach_ssl(
+        self,
+        domain_id: str,
+        ssl_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.attach_ssl(
+            domain_id,
+            ssl_id,
+        )
+
+    def update_dns_status(
         self,
         domain_id: str,
         status: str,
-    ) -> dict | None:
-
-        domain = self.service.update_status(
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.update_dns_status(
             domain_id,
             status,
         )
 
-        if not domain:
-            return None
-
-        return domain.to_dict()
-
-    def update_nameservers(
+    def update_nameserver_status(
         self,
         domain_id: str,
-        nameservers: list[str],
-    ) -> dict | None:
-
-        domain = self.service.update_nameservers(
+        status: str,
+    ) -> Optional[Dict[str, Any]]:
+        return self.service.update_nameserver_status(
             domain_id,
-            nameservers,
+            status,
         )
-
-        if not domain:
-            return None
-
-        return domain.to_dict()
-
-    def update_verification(
-        self,
-        domain_id: str,
-        verified: bool,
-    ) -> dict | None:
-
-        domain = self.service.update_verification(
-            domain_id,
-            verified,
-        )
-
-        if not domain:
-            return None
-
-        return domain.to_dict()
-
-    def delete(self, domain_id: str) -> bool:
-        return self.service.delete(domain_id)
