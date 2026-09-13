@@ -443,6 +443,22 @@ def storage_disconnect():
 
 @app.get("/")
 def home():
+    # =========================================================
+# PUBLIC FRONTEND
+# =========================================================
+
+FRONTEND_DIR = (
+    Path(__file__).resolve().parents[2] / "frontend"
+)
+
+app.mount(
+    "/frontend",
+    StaticFiles(
+        directory=FRONTEND_DIR,
+        html=True,
+    ),
+    name="frontend",
+)
     """Return MAIN BASE FOUNDATION API status."""
 
     return {
