@@ -443,7 +443,16 @@ def storage_disconnect():
 
 @app.get("/")
 def home():
-    # =========================================================
+    """Return MAIN BASE FOUNDATION API status."""
+
+    return {
+        "project": "MAIN BASE FOUNDATION",
+        "version": "1.0.0",
+        "status": "RUNNING",
+    }
+
+
+# =========================================================
 # PUBLIC FRONTEND
 # =========================================================
 
@@ -459,10 +468,3 @@ app.mount(
     ),
     name="frontend",
 )
-    """Return MAIN BASE FOUNDATION API status."""
-
-    return {
-        "project": "MAIN BASE FOUNDATION",
-        "version": "1.0.0",
-        "status": "RUNNING",
-    }
