@@ -1,6 +1,8 @@
+from pathlib import Path
 from typing import Dict
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from backend.api.users import router as users_router
 from backend.api.businesses import router as businesses_router
