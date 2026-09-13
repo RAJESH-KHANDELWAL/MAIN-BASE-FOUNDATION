@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Opportunity | MAIN BASE FOUNDATION</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header class="site-header">
+    <div class="container header-inner">
+
+        <a href="/frontend/" class="brand">
+            MAIN BASE FOUNDATION
+        </a>
+
+        <nav class="main-nav">
+            <a href="/frontend/">Home</a>
+            <a href="/frontend/#opportunities">
+                Opportunities
+            </a>
+            <a href="/frontend/profile-create.html">
+                Create Profile
+            </a>
+        </nav>
+
+    </div>
+</header>
+
+
+<main>
+
+    <section class="section">
+        <div class="container">
+
+            <div
+                id="opportunityLoading"
+                class="review-status"
+            >
+                Loading opportunity...
+            </div>
+
+            <div
+                id="opportunityError"
+                class="review-error"
+                hidden
+            ></div>
+
+
+            <article
+                id="opportunityCard"
+                class="review-item"
+                hidden
+            >
+
+                <div class="review-item-header">
+
+                    <div>
+
+                        <p
+                            id="opportunityType"
+                            class="review-status"
+                        ></p>
+
+                        <h1 id="opportunityTitle"></h1>
+
+                        <p id="opportunityOwner"></p>
+
+                    </div>
+
+                    <div>
+
+                        <span
+                            id="opportunityStatus"
+                            class="review-status"
+                        ></span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="review-item-meta">
+
+                    <p>
+                        <strong>Opportunity ID:</strong>
+                        <span id="opportunityId"></span>
+                    </p>
+
+                    <p>
+                        <strong>Skills:</strong>
+                        <span id="opportunitySkills"></span>
+                    </p>
+
+                    <p>
+                        <strong>Languages:</strong>
+                        <span id="opportunityLanguages"></span>
+                    </p>
+
+                    <p>
+                        <strong>Budget:</strong>
+                        <span id="opportunityBudget"></span>
+                    </p>
+
+                    <p>
+                        <strong>Deadline:</strong>
+                        <span id="opportunityDeadline"></span>
+                    </p>
+
+                    <p>
+                        <strong>Availability:</strong>
+                        <span id="opportunityAvailability"></span>
+                    </p>
+
+                </div>
+
+
+                <div class="review-notes">
+
+                    <h2>Description</h2>
+
+                    <p id="opportunityDescription"></p>
+
+                </div>
+
+            </article>
+
+        </div>
+    </section>
+
+</main>
+
+
+<footer class="site-footer">
+    <div class="container">
+
+        <p>
+            MAIN BASE FOUNDATION
+        </p>
+
+        <p>
+            Web • Android • iOS
+        </p>
+
+    </div>
+</footer>
+
+
+<script src="opportunity.js"></script>
+
+</body>
+</html>
