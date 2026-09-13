@@ -1,12 +1,16 @@
-"""DNS infrastructure for MAIN BASE FOUNDATION."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - DNS Package
+"""
 
-from .model import DNSZone, DNSRecord
+from .model import DNSZoneInfo, DNSRecordInfo
 from .service import DNSService
 from .controller import DNSController
 
+
 __all__ = [
-    "DNSZone",
-    "DNSRecord",
+    "DNSZoneInfo",
+    "DNSRecordInfo",
     "DNSService",
     "DNSController",
 ]
