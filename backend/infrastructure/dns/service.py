@@ -2,25 +2,28 @@
 MAIN BASE FOUNDATION
 Infrastructure - DNS Service
 
-DNS zone and record lifecycle management.
+Virtual Temple style DNS foundation.
+
+This service manages DNS configuration records inside
+the infrastructure control plane.
+
+Actual authoritative DNS execution will be connected
+to real DNS infrastructure later.
 """
+
+from __future__ import annotations
 
 import datetime
 import json
 from typing import Any, Dict, List, Optional
 
-from backend.database.connection import get_connection
+from backend.database.service import DatabaseService
 from backend.infrastructure.dns.model import DNSRecordInfo, DNSZoneInfo
 
 
 class DNSService:
     """
-    Manages DNS zones and DNS records inside the
-    infrastructure control plane.
-
-    This service manages DNS configuration records.
-    Actual authoritative DNS execution will be connected
-    to the real DNS infrastructure later.
+    Manage DNS zones and DNS records through DatabaseService.
     """
 
     ALLOWED_ZONE_TYPES = {
@@ -56,74 +59,69 @@ class DNSService:
     TABLE_ZONE = "infrastructure_dns_zones"
     TABLE_RECORD = "infrastructure_dns_records"
 
-    def __init__(self):
+    def __init__(
+        self,
+        database_service: Optional[DatabaseService] = None,
+    ) -> None:
+        self.database = (
+            database_service
+            or DatabaseService()
+        )
+
         self.initialize()
 
     def initialize(self) -> None:
-        connection = get_connection()
+        """Initialize DNS tables."""
 
-        connection.execute(
+        self.database.initialize()
+
+        self.database.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.TABLE_ZONE} (
                 zone_id TEXT PRIMARY KEY,
                 domain_name TEXT NOT NULL UNIQUE,
-
                 zone_type TEXT NOT NULL,
-
                 primary_nameserver TEXT,
                 secondary_nameserver TEXT,
-
                 nameserver_status TEXT NOT NULL,
                 dns_status TEXT NOT NULL,
-
                 status TEXT NOT NULL,
                 verified INTEGER NOT NULL DEFAULT 0,
-
                 metadata TEXT,
-
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
 
-        connection.execute(
+        self.database.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.TABLE_RECORD} (
                 record_id TEXT PRIMARY KEY,
                 domain_name TEXT NOT NULL,
-
                 record_type TEXT NOT NULL,
                 record_name TEXT NOT NULL,
                 record_value TEXT NOT NULL,
-
                 ttl INTEGER NOT NULL DEFAULT 3600,
                 priority INTEGER,
-
                 status TEXT NOT NULL,
                 verified INTEGER NOT NULL DEFAULT 0,
-
                 metadata TEXT,
-
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
 
-        connection.commit()
-
     def _next_zone_id(self) -> str:
-        connection = get_connection()
-
-        row = connection.execute(
+        row = self.database.fetchone(
             f"""
             SELECT zone_id
             FROM {self.TABLE_ZONE}
             ORDER BY rowid DESC
             LIMIT 1
             """
-        ).fetchone()
+        )
 
         if not row:
             return "ZONE-000001"
@@ -135,16 +133,14 @@ class DNSService:
         return f"ZONE-{number + 1:06d}"
 
     def _next_record_id(self) -> str:
-        connection = get_connection()
-
-        row = connection.execute(
+        row = self.database.fetchone(
             f"""
             SELECT record_id
             FROM {self.TABLE_RECORD}
             ORDER BY rowid DESC
             LIMIT 1
             """
-        ).fetchone()
+        )
 
         if not row:
             return "DNS-000001"
@@ -249,9 +245,7 @@ class DNSService:
         zone_id = self._next_zone_id()
         now = datetime.datetime.utcnow().isoformat()
 
-        connection = get_connection()
-
-        connection.execute(
+        self.database.execute(
             f"""
             INSERT INTO {self.TABLE_ZONE} (
                 zone_id,
@@ -285,8 +279,6 @@ class DNSService:
             ),
         )
 
-        connection.commit()
-
         return self.get_zone(zone_id)
 
     def get_zone(
@@ -294,16 +286,14 @@ class DNSService:
         zone_id: str,
     ) -> Optional[DNSZoneInfo]:
 
-        connection = get_connection()
-
-        row = connection.execute(
+        row = self.database.fetchone(
             f"""
             SELECT *
             FROM {self.TABLE_ZONE}
             WHERE zone_id = ?
             """,
             (zone_id,),
-        ).fetchone()
+        )
 
         if not row:
             return None
@@ -315,16 +305,14 @@ class DNSService:
         domain_name: str,
     ) -> Optional[DNSZoneInfo]:
 
-        connection = get_connection()
-
-        row = connection.execute(
+        row = self.database.fetchone(
             f"""
             SELECT *
             FROM {self.TABLE_ZONE}
             WHERE domain_name = ?
             """,
             (domain_name,),
-        ).fetchone()
+        )
 
         if not row:
             return None
@@ -336,10 +324,8 @@ class DNSService:
         status: Optional[str] = None,
     ) -> List[DNSZoneInfo]:
 
-        connection = get_connection()
-
         if status:
-            rows = connection.execute(
+            rows = self.database.fetchall(
                 f"""
                 SELECT *
                 FROM {self.TABLE_ZONE}
@@ -347,15 +333,15 @@ class DNSService:
                 ORDER BY rowid ASC
                 """,
                 (status,),
-            ).fetchall()
+            )
         else:
-            rows = connection.execute(
+            rows = self.database.fetchall(
                 f"""
                 SELECT *
                 FROM {self.TABLE_ZONE}
                 ORDER BY rowid ASC
                 """
-            ).fetchall()
+            )
 
         return [
             self._zone_to_model(row)
@@ -428,9 +414,7 @@ class DNSService:
         values = list(updates.values())
         values.append(zone_id)
 
-        connection = get_connection()
-
-        connection.execute(
+        self.database.execute(
             f"""
             UPDATE {self.TABLE_ZONE}
             SET {set_clause}
@@ -439,8 +423,6 @@ class DNSService:
             values,
         )
 
-        connection.commit()
-
         return self.get_zone(zone_id)
 
     def delete_zone(
@@ -448,9 +430,7 @@ class DNSService:
         zone_id: str,
     ) -> bool:
 
-        connection = get_connection()
-
-        cursor = connection.execute(
+        affected = self.database.execute(
             f"""
             DELETE FROM {self.TABLE_ZONE}
             WHERE zone_id = ?
@@ -458,9 +438,7 @@ class DNSService:
             (zone_id,),
         )
 
-        connection.commit()
-
-        return cursor.rowcount > 0
+        return affected > 0
 
     # ---------------------------------------------------------
     # DNS RECORDS
@@ -505,9 +483,7 @@ class DNSService:
         record_id = self._next_record_id()
         now = datetime.datetime.utcnow().isoformat()
 
-        connection = get_connection()
-
-        connection.execute(
+        self.database.execute(
             f"""
             INSERT INTO {self.TABLE_RECORD} (
                 record_id,
@@ -541,8 +517,6 @@ class DNSService:
             ),
         )
 
-        connection.commit()
-
         return self.get_record(record_id)
 
     def get_record(
@@ -550,16 +524,14 @@ class DNSService:
         record_id: str,
     ) -> Optional[DNSRecordInfo]:
 
-        connection = get_connection()
-
-        row = connection.execute(
+        row = self.database.fetchone(
             f"""
             SELECT *
             FROM {self.TABLE_RECORD}
             WHERE record_id = ?
             """,
             (record_id,),
-        ).fetchone()
+        )
 
         if not row:
             return None
@@ -571,8 +543,6 @@ class DNSService:
         domain_name: Optional[str] = None,
         record_type: Optional[str] = None,
     ) -> List[DNSRecordInfo]:
-
-        connection = get_connection()
 
         conditions = []
         values = []
@@ -592,7 +562,7 @@ class DNSService:
                 "WHERE " + " AND ".join(conditions)
             )
 
-        rows = connection.execute(
+        rows = self.database.fetchall(
             f"""
             SELECT *
             FROM {self.TABLE_RECORD}
@@ -600,7 +570,7 @@ class DNSService:
             ORDER BY rowid ASC
             """,
             tuple(values),
-        ).fetchall()
+        )
 
         return [
             self._record_to_model(row)
@@ -672,9 +642,7 @@ class DNSService:
         values = list(updates.values())
         values.append(record_id)
 
-        connection = get_connection()
-
-        connection.execute(
+        self.database.execute(
             f"""
             UPDATE {self.TABLE_RECORD}
             SET {set_clause}
@@ -683,8 +651,6 @@ class DNSService:
             values,
         )
 
-        connection.commit()
-
         return self.get_record(record_id)
 
     def delete_record(
@@ -692,9 +658,7 @@ class DNSService:
         record_id: str,
     ) -> bool:
 
-        connection = get_connection()
-
-        cursor = connection.execute(
+        affected = self.database.execute(
             f"""
             DELETE FROM {self.TABLE_RECORD}
             WHERE record_id = ?
@@ -702,9 +666,7 @@ class DNSService:
             (record_id,),
         )
 
-        connection.commit()
-
-        return cursor.rowcount > 0
+        return affected > 0
 
     # ---------------------------------------------------------
     # DNS STATE OPERATIONS
@@ -761,3 +723,8 @@ class DNSService:
             record_id,
             verified=True,
         )
+
+
+__all__ = [
+    "DNSService",
+]
