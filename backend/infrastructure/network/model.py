@@ -1,53 +1,69 @@
-"""Network infrastructure models."""
+"""
+MAIN BASE FOUNDATION
+Infrastructure - Network Models
 
-from __future__ import annotations
+Virtual Temple style network foundation.
+"""
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 
 @dataclass
 class NetworkInfo:
+    """
+    Represents a network managed by the infrastructure
+    control plane.
+    """
+
     network_id: str
     name: str
-    network_type: str
-    server_id: str = ""
-    provider: str = ""
-    region: str = ""
-    public_ipv4: str = ""
-    public_ipv6: str = ""
-    subnet: str = ""
-    gateway: str = ""
-    bandwidth_mbps: float = 0
-    status: str = "PLANNED"
-    description: str = ""
-    created_at: str = ""
-    updated_at: str = ""
 
-    def __post_init__(self):
-        now = datetime.now(timezone.utc).isoformat()
+    network_type: str = "PUBLIC"
+    provider: Optional[str] = None
 
-        if not self.created_at:
-            self.created_at = now
+    region: Optional[str] = None
+    datacenter: Optional[str] = None
 
-        if not self.updated_at:
-            self.updated_at = now
+    cidr: Optional[str] = None
+    gateway: Optional[str] = None
+    subnet_mask: Optional[str] = None
 
-    def to_dict(self) -> dict:
+    dns_primary: Optional[str] = None
+    dns_secondary: Optional[str] = None
+
+    vlan_id: Optional[int] = None
+
+    status: str = "ACTIVE"
+    verified: bool = False
+
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    created_at: str = field(
+        default_factory=lambda: datetime.utcnow().isoformat()
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.utcnow().isoformat()
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "network_id": self.network_id,
             "name": self.name,
             "network_type": self.network_type,
-            "server_id": self.server_id,
             "provider": self.provider,
             "region": self.region,
-            "public_ipv4": self.public_ipv4,
-            "public_ipv6": self.public_ipv6,
-            "subnet": self.subnet,
+            "datacenter": self.datacenter,
+            "cidr": self.cidr,
             "gateway": self.gateway,
-            "bandwidth_mbps": self.bandwidth_mbps,
+            "subnet_mask": self.subnet_mask,
+            "dns_primary": self.dns_primary,
+            "dns_secondary": self.dns_secondary,
+            "vlan_id": self.vlan_id,
             "status": self.status,
-            "description": self.description,
+            "verified": self.verified,
+            "metadata": self.metadata,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
