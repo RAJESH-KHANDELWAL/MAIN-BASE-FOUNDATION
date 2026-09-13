@@ -5,15 +5,19 @@ Infrastructure - Hosting Service
 Hosting resource lifecycle and persistence service.
 """
 
+from __future__ import annotations
+
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-import json
 
-from backend.database.connection import get_connection
+from backend.database.service import DatabaseService
 
 
 class HostingService:
     """Service layer for hosting infrastructure."""
+
+    TABLE_NAME = "infrastructure_hosting"
 
     ALLOWED_HOSTING_TYPES = {
         "SHARED",
@@ -30,53 +34,50 @@ class HostingService:
         "TERMINATED",
     }
 
-    def __init__(self):
+    def __init__(
+        self,
+        database_service: Optional[DatabaseService] = None,
+    ) -> None:
+        self.database = (
+            database_service
+            or DatabaseService()
+        )
+
         self.initialize()
 
     def initialize(self) -> None:
         """Create hosting infrastructure table."""
 
-        conn = get_connection()
+        self.database.initialize()
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS infrastructure_hosting (
+        self.database.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.TABLE_NAME} (
                 hosting_id TEXT PRIMARY KEY,
                 hosting_type TEXT NOT NULL,
                 plan_name TEXT,
-
                 domain_id TEXT,
                 server_id TEXT,
                 ip_address_id TEXT,
-
                 control_panel TEXT,
                 operating_system TEXT,
-
                 storage_id TEXT,
                 ssl_id TEXT,
-
                 resource_status TEXT NOT NULL DEFAULT 'PROVISIONING',
                 status TEXT NOT NULL DEFAULT 'PENDING',
-
                 root_access INTEGER NOT NULL DEFAULT 0,
                 dedicated_ip INTEGER NOT NULL DEFAULT 0,
-
                 cpu_cores INTEGER,
                 memory_gb REAL,
                 storage_gb REAL,
                 bandwidth_gb REAL,
-
                 verified INTEGER NOT NULL DEFAULT 0,
-
                 metadata TEXT,
-
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
-
-        conn.commit()
 
     @staticmethod
     def _now() -> str:
@@ -92,6 +93,7 @@ class HostingService:
     def _deserialize_metadata(
         value: Optional[str],
     ) -> Dict[str, Any]:
+
         if not value:
             return {}
 
@@ -100,21 +102,22 @@ class HostingService:
         except (TypeError, ValueError):
             return {}
 
-    @staticmethod
-    def _next_hosting_id(conn) -> str:
-        row = conn.execute(
-            """
+    def _next_hosting_id(self) -> str:
+        row = self.database.fetchone(
+            f"""
             SELECT hosting_id
-            FROM infrastructure_hosting
-            ORDER BY hosting_id DESC
+            FROM {self.TABLE_NAME}
+            ORDER BY rowid DESC
             LIMIT 1
             """
-        ).fetchone()
+        )
 
         if not row:
             return "HOST-000001"
 
-        number = int(row["hosting_id"].split("-")[1]) + 1
+        number = int(
+            row["hosting_id"].split("-")[1]
+        ) + 1
 
         return f"HOST-{number:06d}"
 
@@ -144,17 +147,16 @@ class HostingService:
         if hosting_type not in self.ALLOWED_HOSTING_TYPES:
             raise ValueError(
                 "Invalid hosting_type. "
-                "Use SHARED, VIRTUAL_SERVER, or DEDICATED_SERVER."
+                "Use SHARED, VIRTUAL_SERVER, or "
+                "DEDICATED_SERVER."
             )
 
-        conn = get_connection()
-
-        hosting_id = self._next_hosting_id(conn)
+        hosting_id = self._next_hosting_id()
         now = self._now()
 
-        conn.execute(
-            """
-            INSERT INTO infrastructure_hosting (
+        self.database.execute(
+            f"""
+            INSERT INTO {self.TABLE_NAME} (
                 hosting_id,
                 hosting_type,
                 plan_name,
@@ -178,7 +180,11 @@ class HostingService:
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?
+            )
             """,
             (
                 hosting_id,
@@ -206,8 +212,6 @@ class HostingService:
             ),
         )
 
-        conn.commit()
-
         return self.get_hosting(hosting_id)
 
     def get_hosting(
@@ -216,16 +220,14 @@ class HostingService:
     ) -> Optional[Dict[str, Any]]:
         """Get hosting resource by ID."""
 
-        conn = get_connection()
-
-        row = conn.execute(
-            """
+        row = self.database.fetchone(
+            f"""
             SELECT *
-            FROM infrastructure_hosting
+            FROM {self.TABLE_NAME}
             WHERE hosting_id = ?
             """,
             (hosting_id,),
-        ).fetchone()
+        )
 
         if not row:
             return None
@@ -235,17 +237,18 @@ class HostingService:
     def list_hosting(self) -> List[Dict[str, Any]]:
         """List all hosting resources."""
 
-        conn = get_connection()
-
-        rows = conn.execute(
-            """
+        rows = self.database.fetchall(
+            f"""
             SELECT *
-            FROM infrastructure_hosting
+            FROM {self.TABLE_NAME}
             ORDER BY created_at DESC
             """
-        ).fetchall()
+        )
 
-        return [self._row_to_dict(row) for row in rows]
+        return [
+            self._row_to_dict(row)
+            for row in rows
+        ]
 
     def list_by_type(
         self,
@@ -258,19 +261,20 @@ class HostingService:
         if hosting_type not in self.ALLOWED_HOSTING_TYPES:
             raise ValueError("Invalid hosting_type")
 
-        conn = get_connection()
-
-        rows = conn.execute(
-            """
+        rows = self.database.fetchall(
+            f"""
             SELECT *
-            FROM infrastructure_hosting
+            FROM {self.TABLE_NAME}
             WHERE hosting_type = ?
             ORDER BY created_at DESC
             """,
             (hosting_type,),
-        ).fetchall()
+        )
 
-        return [self._row_to_dict(row) for row in rows]
+        return [
+            self._row_to_dict(row)
+            for row in rows
+        ]
 
     def update_hosting(
         self,
@@ -313,13 +317,17 @@ class HostingService:
                 value = str(value).strip().upper()
 
                 if value not in self.ALLOWED_HOSTING_TYPES:
-                    raise ValueError("Invalid hosting_type")
+                    raise ValueError(
+                        "Invalid hosting_type"
+                    )
 
             if field_name == "status":
                 value = str(value).strip().upper()
 
                 if value not in self.ALLOWED_STATUS:
-                    raise ValueError("Invalid hosting status")
+                    raise ValueError(
+                        "Invalid hosting status"
+                    )
 
             if field_name in {
                 "root_access",
@@ -331,7 +339,9 @@ class HostingService:
             if field_name == "metadata":
                 value = self._serialize_metadata(value)
 
-            updates.append(f"{field_name} = ?")
+            updates.append(
+                f"{field_name} = ?"
+            )
             values.append(value)
 
         if not updates:
@@ -341,18 +351,14 @@ class HostingService:
         values.append(self._now())
         values.append(hosting_id)
 
-        conn = get_connection()
-
-        conn.execute(
+        self.database.execute(
             f"""
-            UPDATE infrastructure_hosting
+            UPDATE {self.TABLE_NAME}
             SET {", ".join(updates)}
             WHERE hosting_id = ?
             """,
             values,
         )
-
-        conn.commit()
 
         return self.get_hosting(hosting_id)
 
@@ -447,19 +453,15 @@ class HostingService:
     ) -> bool:
         """Delete a hosting resource."""
 
-        conn = get_connection()
-
-        cursor = conn.execute(
-            """
-            DELETE FROM infrastructure_hosting
+        affected = self.database.execute(
+            f"""
+            DELETE FROM {self.TABLE_NAME}
             WHERE hosting_id = ?
             """,
             (hosting_id,),
         )
 
-        conn.commit()
-
-        return cursor.rowcount > 0
+        return affected > 0
 
     def exists(
         self,
@@ -467,22 +469,23 @@ class HostingService:
     ) -> bool:
         """Check whether hosting exists."""
 
-        conn = get_connection()
-
-        row = conn.execute(
-            """
+        row = self.database.fetchone(
+            f"""
             SELECT 1
-            FROM infrastructure_hosting
+            FROM {self.TABLE_NAME}
             WHERE hosting_id = ?
             LIMIT 1
             """,
             (hosting_id,),
-        ).fetchone()
+        )
 
         return row is not None
 
     @classmethod
-    def _row_to_dict(cls, row) -> Dict[str, Any]:
+    def _row_to_dict(
+        cls,
+        row,
+    ) -> Dict[str, Any]:
         return {
             "hosting_id": row["hosting_id"],
             "hosting_type": row["hosting_type"],
@@ -503,7 +506,14 @@ class HostingService:
             "storage_gb": row["storage_gb"],
             "bandwidth_gb": row["bandwidth_gb"],
             "verified": bool(row["verified"]),
-            "metadata": cls._deserialize_metadata(row["metadata"]),
+            "metadata": cls._deserialize_metadata(
+                row["metadata"]
+            ),
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
         }
+
+
+__all__ = [
+    "HostingService",
+]
