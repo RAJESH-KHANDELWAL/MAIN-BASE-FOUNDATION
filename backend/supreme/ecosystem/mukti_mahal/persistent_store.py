@@ -3,41 +3,21 @@ MAIN BASE FOUNDATION
 
 SUPREME — Mukti Mahal Persistent Store
 
-Database-backed dictionary compatible with the existing
-Mukti Mahal service architecture.
-
-The existing MuktiMahalService uses dictionaries for its
-runtime collections. This store preserves that interface
-while making the state persistent in the central
-MAIN BASE FOUNDATION SQLite database.
-
-No credentials, passwords, OTPs, authentication secrets,
-raw identity documents, or payment credentials are stored.
+Database-backed dictionary-compatible storage for
+the Mukti Mahal application service.
 """
 
 from __future__ import annotations
 
 import pickle
 import sqlite3
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, List, Optional
 
 from backend.database.service import DatabaseService
 
 
 class PersistentDict:
-    """
-    Small dictionary-compatible persistent store.
-
-    Supported operations used by MuktiMahalService:
-
-    - get()
-    - values()
-    - len()
-    - contains / `in`
-    - item assignment
-    - item deletion
-    - clear()
-    """
+    """Persistent dictionary backed by MAIN BASE FOUNDATION DB."""
 
     def __init__(
         self,
@@ -45,10 +25,14 @@ class PersistentDict:
         database: Optional[DatabaseService] = None,
     ) -> None:
         if not name:
-            raise ValueError("Persistent store name is required.")
+            raise ValueError(
+                "Persistent store name is required."
+            )
 
         self.name = name
-        self.database = database or DatabaseService()
+        self.database = (
+            database or DatabaseService()
+        )
 
         self.table_name = (
             "mukti_mahal_store_"
@@ -57,13 +41,7 @@ class PersistentDict:
 
         self._initialize()
 
-    # =====================================================
-    # INITIALIZATION
-    # =====================================================
-
     def _initialize(self) -> None:
-        """Initialize the persistent table."""
-
         self.database.initialize()
 
         self.database.execute(
@@ -75,14 +53,7 @@ class PersistentDict:
             """
         )
 
-    # =====================================================
-    # DICT INTERFACE
-    # =====================================================
-
-    def __contains__(
-        self,
-        key: object,
-    ) -> bool:
+    def __contains__(self, key: object) -> bool:
         if key is None:
             return False
 
@@ -105,15 +76,9 @@ class PersistentDict:
             """
         )
 
-        if row is None:
-            return 0
+        return int(row[0]) if row else 0
 
-        return int(row[0])
-
-    def __getitem__(
-        self,
-        key: str,
-    ) -> Any:
+    def __getitem__(self, key: str) -> Any:
         value = self.get(key)
 
         if value is None:
@@ -131,7 +96,7 @@ class PersistentDict:
                 "Persistent store key is required."
             )
 
-        serialized = sqlite3.Binary(
+        data = sqlite3.Binary(
             pickle.dumps(
                 value,
                 protocol=pickle.HIGHEST_PROTOCOL,
@@ -140,7 +105,8 @@ class PersistentDict:
 
         self.database.execute(
             f"""
-            INSERT OR REPLACE INTO {self.table_name} (
+            INSERT OR REPLACE INTO {self.table_name}
+            (
                 item_key,
                 item_value
             )
@@ -148,14 +114,11 @@ class PersistentDict:
             """,
             (
                 str(key),
-                serialized,
+                data,
             ),
         )
 
-    def __delitem__(
-        self,
-        key: str,
-    ) -> None:
+    def __delitem__(self, key: str) -> None:
         affected = self.database.execute(
             f"""
             DELETE FROM {self.table_name}
@@ -167,20 +130,11 @@ class PersistentDict:
         if affected == 0:
             raise KeyError(key)
 
-    # =====================================================
-    # GET
-    # =====================================================
-
     def get(
         self,
         key: str,
         default: Any = None,
     ) -> Any:
-        """Return an item or default."""
-
-        if not key:
-            return default
-
         row = self.database.fetchone(
             f"""
             SELECT item_value
@@ -202,17 +156,10 @@ class PersistentDict:
             ValueError,
         ) as exc:
             raise RuntimeError(
-                f"Unable to deserialize persistent "
-                f"Mukti Mahal item: {key}"
+                "Unable to deserialize Mukti Mahal data."
             ) from exc
 
-    # =====================================================
-    # VALUES
-    # =====================================================
-
     def values(self) -> List[Any]:
-        """Return all stored values."""
-
         rows = self.database.fetchall(
             f"""
             SELECT item_value
@@ -221,33 +168,16 @@ class PersistentDict:
             """
         )
 
-        values: List[Any] = []
+        result: List[Any] = []
 
         for row in rows:
-            try:
-                values.append(
-                    pickle.loads(row[0])
-                )
-            except (
-                pickle.PickleError,
-                EOFError,
-                TypeError,
-                ValueError,
-            ) as exc:
-                raise RuntimeError(
-                    "Unable to deserialize a stored "
-                    "Mukti Mahal item."
-                ) from exc
+            result.append(
+                pickle.loads(row[0])
+            )
 
-        return values
-
-    # =====================================================
-    # ITEMS
-    # =====================================================
+        return result
 
     def items(self) -> List[tuple[str, Any]]:
-        """Return all stored key/value pairs."""
-
         rows = self.database.fetchall(
             f"""
             SELECT item_key, item_value
@@ -256,42 +186,19 @@ class PersistentDict:
             """
         )
 
-        result: List[tuple[str, Any]] = []
-
-        for row in rows:
-            try:
-                value = pickle.loads(row[1])
-            except (
-                pickle.PickleError,
-                EOFError,
-                TypeError,
-                ValueError,
-            ) as exc:
-                raise RuntimeError(
-                    "Unable to deserialize a stored "
-                    "Mukti Mahal item."
-                ) from exc
-
-            result.append(
-                (
-                    str(row[0]),
-                    value,
-                )
+        return [
+            (
+                str(row[0]),
+                pickle.loads(row[1]),
             )
-
-        return result
-
-    # =====================================================
-    # DELETE
-    # =====================================================
+            for row in rows
+        ]
 
     def pop(
         self,
         key: str,
         default: Any = None,
     ) -> Any:
-        """Remove and return an item."""
-
         value = self.get(
             key,
             default,
@@ -302,41 +209,15 @@ class PersistentDict:
 
         return value
 
-    # =====================================================
-    # CLEAR
-    # =====================================================
-
     def clear(self) -> None:
-        """Remove all records from this collection."""
-
         self.database.execute(
             f"""
             DELETE FROM {self.table_name}
             """
         )
 
-    # =====================================================
-    # STATUS
-    # =====================================================
-
-    def count(self) -> int:
-        """Return persistent record count."""
-
-        return len(self)
-
-    # =====================================================
-    # INTERNAL
-    # =====================================================
-
     @staticmethod
-    def _safe_name(
-        name: str,
-    ) -> str:
-        """
-        Convert a logical store name into a safe SQLite
-        identifier.
-        """
-
+    def _safe_name(name: str) -> str:
         allowed = (
             "abcdefghijklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -344,9 +225,7 @@ class PersistentDict:
         )
 
         result = "".join(
-            char
-            if char in allowed
-            else "_"
+            char if char in allowed else "_"
             for char in name
         )
 
