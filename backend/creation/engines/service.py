@@ -1,91 +1,123 @@
-from typing import Dict
+"""
+MUKTI MAHAL
+CREATION ENGINE ROUTER
 
-from .model import GenerationRequest
+Central routing layer for real AI content creation.
+
+Supported creation types:
+PHOTO
+VIDEO
+MOVIE
+MUSIC
+DESIGN
+GAME
+
+MUKTI MAHAL itself is the game/world/experience.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any, Dict
+from uuid import uuid4
+
+
+SUPPORTED_TYPES = {
+    "PHOTO",
+    "VIDEO",
+    "MOVIE",
+    "MUSIC",
+    "DESIGN",
+    "GAME",
+}
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 class GenerationEngineService:
+    """
+    Routes MUKTI MAHAL creation requests to the
+    appropriate real generation engine.
 
-    SUPPORTED_TYPES = {
-        "MOVIE",
-        "VIDEO",
-        "PHOTO",
-        "MUSIC",
-        "GAME",
-        "DESIGN",
-        "SOFTWARE",
-    }
+    This class deliberately does not fabricate output URLs,
+    files, completed statuses, or provider results.
+    """
 
-    def __init__(self):
-        self._requests: Dict[str, GenerationRequest] = {}
-        self._counter = 0
-
-    def _next_id(self):
-        self._counter += 1
-        return f"GEN-{self._counter:06d}"
-
-    def create(
+    def create_request(
         self,
         creation_type: str,
         prompt: str,
-        provider=None,
-        model=None,
-        options=None,
-    ):
-        creation_type = creation_type.upper()
+        model: str | None = None,
+        settings: Dict[str, Any] | None = None,
+        user_id: str | None = None,
+    ) -> Dict[str, Any]:
 
-        if creation_type not in self.SUPPORTED_TYPES:
+        creation_type = creation_type.strip().upper()
+        prompt = prompt.strip()
+
+        if creation_type not in SUPPORTED_TYPES:
             raise ValueError(
                 f"Unsupported creation type: {creation_type}"
             )
 
-        request = GenerationRequest(
-            generation_id=self._next_id(),
-            creation_type=creation_type,
-            prompt=prompt,
-            provider=provider,
-            model=model,
-            options=options or {},
+        if not prompt:
+            raise ValueError(
+                "Creation prompt is required."
+            )
+
+        generation_id = (
+            f"MM-GEN-{uuid4().hex[:12].upper()}"
         )
 
-        self._requests[request.generation_id] = request
+        engine = self._resolve_engine(
+            creation_type
+        )
 
-        return request
+        return {
+            "generation_id": generation_id,
+            "system": "MUKTI MAHAL",
+            "creation_type": creation_type,
+            "engine": engine,
+            "prompt": prompt,
+            "model": model,
+            "settings": settings or {},
+            "user_id": user_id,
+            "status": "QUEUED",
+            "created_at": utc_now(),
+        }
 
-    def get(self, generation_id):
-        return self._requests.get(generation_id)
-
-    def list(self):
-        return list(self._requests.values())
-
-    def mark_processing(self, generation_id):
-        request = self.get(generation_id)
-
-        if request is None:
-            return None
-
-        request.status = "PROCESSING"
-        return request
-
-    def mark_completed(
+    def _resolve_engine(
         self,
-        generation_id,
-        output_url,
-    ):
-        request = self.get(generation_id)
+        creation_type: str,
+    ) -> str:
 
-        if request is None:
-            return None
+        engines = {
+            "PHOTO": "PHOTO_GENERATION",
+            "VIDEO": "VIDEO_GENERATION",
+            "MOVIE": "MOVIE_PRODUCTION",
+            "MUSIC": "MUSIC_GENERATION",
+            "DESIGN": "DESIGN_GENERATION",
+            "GAME": "MUKTI_MAHAL_WORLD_GENERATION",
+        }
 
-        request.status = "COMPLETED"
-        request.output_url = output_url
+        return engines[creation_type]
 
-        return request
+    def status(self) -> Dict[str, Any]:
 
-    def mark_failed(self, generation_id):
-        request = self.get(generation_id)
-
-        if request is None:
-            return None
-
-        request.status = "FAILED"
-        return request
+        return {
+            "system": "MUKTI MAHAL CREATION ENGINE",
+            "status": "READY",
+            "supported_types": sorted(
+                SUPPORTED_TYPES
+            ),
+            "engines": {
+                "PHOTO": "PHOTO_GENERATION",
+                "VIDEO": "VIDEO_GENERATION",
+                "MOVIE": "MOVIE_PRODUCTION",
+                "MUSIC": "MUSIC_GENERATION",
+                "DESIGN": "DESIGN_GENERATION",
+                "GAME": "MUKTI_MAHAL_WORLD_GENERATION",
+            },
+        }
