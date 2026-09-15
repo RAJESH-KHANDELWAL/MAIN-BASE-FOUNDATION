@@ -7,97 +7,338 @@ body {
     width: 100%;
     height: 100%;
     margin: 0;
+    padding: 0;
+
     overflow: hidden;
+
     background: #000;
+
+    font-family:
+        "Century Schoolbook",
+        "Libre Baskerville",
+        serif;
 }
 
 body {
-    font-family: "Century Schoolbook", "Libre Baskerville", serif;
+    touch-action: none;
+}
+
+button {
+    font-family: inherit;
 }
 
 #mukti-mahal {
     position: relative;
+
     width: 100vw;
     height: 100vh;
+
     overflow: hidden;
+
+    background: #000;
 }
 
 #mahal-canvas {
-    display: block;
+    position: absolute;
+
+    inset: 0;
+
     width: 100%;
     height: 100%;
-    background: #101010;
-    image-rendering: auto;
+
+    display: block;
 }
+
+
+/* =========================================================
+   HUD
+========================================================= */
 
 #hud {
     position: absolute;
+
     top: 0;
     left: 0;
+
     width: 100%;
+
     padding: 24px;
+
     pointer-events: none;
+
+    z-index: 10;
 }
 
-.brand {
-    font-size: 28px;
+.hud-brand {
+    display: inline-block;
+
+    padding: 12px 16px;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    border: 1px solid
+        rgba(255, 255, 255, 0.18);
+
+    border-radius: 10px;
+
+    backdrop-filter: blur(8px);
+}
+
+.hud-title {
+    font-size: 25px;
+
     font-weight: 800;
+
     letter-spacing: 3px;
 }
 
-.status {
-    margin-top: 8px;
-    font-size: 14px;
+.hud-subtitle {
+    margin-top: 5px;
+
+    font-size: 11px;
+
+    letter-spacing: 2px;
+
+    opacity: 0.65;
+}
+
+.runtime-status {
+    position: absolute;
+
+    top: 24px;
+    right: 24px;
+
+    padding: 12px 16px;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    border: 1px solid
+        rgba(255, 255, 255, 0.18);
+
+    border-radius: 10px;
+
+    font-size: 12px;
+
+    letter-spacing: 1px;
+
+    backdrop-filter: blur(8px);
+}
+
+
+/* =========================================================
+   DESKTOP CONTROLS
+========================================================= */
+
+.controls {
+    position: absolute;
+
+    left: 24px;
+    bottom: 24px;
+
+    z-index: 10;
+
+    padding: 15px 18px;
+
+    background: rgba(0, 0, 0, 0.6);
+
+    border: 1px solid
+        rgba(255, 255, 255, 0.18);
+
+    border-radius: 10px;
+
+    font-size: 12px;
+
+    line-height: 1.8;
+
+    backdrop-filter: blur(8px);
+}
+
+.controls-title {
+    margin-bottom: 5px;
+
+    font-size: 11px;
+
+    letter-spacing: 2px;
+
+    opacity: 0.6;
+}
+
+
+/* =========================================================
+   INTERACTION
+========================================================= */
+
+.interaction-panel {
+    position: absolute;
+
+    left: 50%;
+    bottom: 8%;
+
+    transform: translateX(-50%);
+
+    width: min(520px, 90vw);
+
+    z-index: 30;
+
+    padding: 25px;
+
+    text-align: center;
+
+    background: rgba(0, 0, 0, 0.9);
+
+    border: 1px solid
+        rgba(255, 255, 255, 0.25);
+
+    border-radius: 14px;
+
+    backdrop-filter: blur(12px);
+}
+
+.interaction-title {
+    font-size: 23px;
+
+    font-weight: 800;
+
     letter-spacing: 1px;
 }
 
-.instructions {
-    position: absolute;
-    top: 24px;
-    right: 24px;
-    padding: 14px 18px;
-    background: rgba(0, 0, 0, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+.interaction-description {
+    margin-top: 12px;
+
+    font-size: 14px;
+
     line-height: 1.7;
-    font-size: 13px;
+
+    opacity: 0.82;
 }
 
-#interaction-panel {
-    position: absolute;
-    left: 50%;
-    bottom: 8%;
-    transform: translateX(-50%);
-    width: min(520px, 90vw);
-    padding: 24px;
-    background: rgba(0, 0, 0, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 12px;
-    text-align: center;
-}
+#interaction-close {
+    margin-top: 20px;
 
-#interaction-title {
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 10px;
-}
+    padding: 10px 22px;
 
-#interaction-description {
-    font-size: 15px;
-    line-height: 1.6;
-    margin-bottom: 18px;
-}
+    border: 1px solid
+        rgba(255, 255, 255, 0.35);
 
-#close-interaction {
-    padding: 10px 20px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 6px;
+    border-radius: 7px;
+
     background: transparent;
+
     color: inherit;
-    font-family: inherit;
+
     cursor: pointer;
 }
 
+#interaction-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
 .hidden {
+    display: none !important;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+.mobile-controls {
     display: none;
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 20px;
+
+    z-index: 20;
+
+    align-items: center;
+
+    flex-direction: column;
+}
+
+.move-row {
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 8px;
+}
+
+.move-button,
+.interact-button {
+    width: 58px;
+    height: 58px;
+
+    border: 1px solid
+        rgba(255, 255, 255, 0.25);
+
+    border-radius: 12px;
+
+    background: rgba(0, 0, 0, 0.65);
+
+    color: white;
+
+    font-size: 20px;
+
+    user-select: none;
+
+    -webkit-user-select: none;
+
+    touch-action: none;
+}
+
+.interact-button {
+    width: 130px;
+
+    margin-top: 12px;
+
+    font-size: 12px;
+
+    letter-spacing: 1px;
+}
+
+.move-button:active,
+.interact-button:active {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 700px) {
+
+    #hud {
+        padding: 14px;
+    }
+
+    .hud-title {
+        font-size: 18px;
+
+        letter-spacing: 2px;
+    }
+
+    .runtime-status {
+        top: 14px;
+        right: 14px;
+
+        max-width: 180px;
+
+        font-size: 10px;
+    }
+
+    .controls {
+        display: none;
+    }
+
+    .mobile-controls {
+        display: flex;
+    }
+
+    .interaction-panel {
+        bottom: 145px;
+    }
 }
