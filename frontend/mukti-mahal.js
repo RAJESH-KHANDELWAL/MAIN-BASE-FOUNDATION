@@ -1,323 +1,878 @@
-(() => {
-    "use strict";
+import * as THREE from
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-    const canvas = document.getElementById("mahal-canvas");
-    const ctx = canvas.getContext("2d");
 
-    const status = document.getElementById("runtime-status");
-    const panel = document.getElementById("interaction-panel");
-    const interactionTitle = document.getElementById("interaction-title");
-    const interactionDescription =
-        document.getElementById("interaction-description");
-    const closeInteraction =
-        document.getElementById("close-interaction");
+/* =========================================================
+   ELEMENTS
+========================================================= */
 
-    const keys = new Set();
+const canvas =
+    document.getElementById("mahal-canvas");
 
-    const player = {
-        x: 0,
-        y: 0,
-        speed: 3.5,
-        size: 18
+const runtimeStatus =
+    document.getElementById("runtime-status");
+
+const interactionPanel =
+    document.getElementById("interaction-panel");
+
+const interactionTitle =
+    document.getElementById("interaction-title");
+
+const interactionDescription =
+    document.getElementById("interaction-description");
+
+const interactionClose =
+    document.getElementById("interaction-close");
+
+const mobileInteract =
+    document.getElementById("mobile-interact");
+
+
+/* =========================================================
+   THREE.JS SCENE
+========================================================= */
+
+const scene =
+    new THREE.Scene();
+
+scene.background =
+    new THREE.Color(0x101010);
+
+scene.fog =
+    new THREE.Fog(
+        0x101010,
+        80,
+        500
+    );
+
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+const camera =
+    new THREE.PerspectiveCamera(
+        65,
+        window.innerWidth /
+            window.innerHeight,
+        0.1,
+        2000
+    );
+
+
+/* =========================================================
+   RENDERER
+========================================================= */
+
+const renderer =
+    new THREE.WebGLRenderer({
+        canvas,
+        antialias: true
+    });
+
+renderer.setPixelRatio(
+    Math.min(
+        window.devicePixelRatio || 1,
+        2
+    )
+);
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+
+/* =========================================================
+   LIGHTING
+========================================================= */
+
+const ambientLight =
+    new THREE.AmbientLight(
+        0xffffff,
+        1.7
+    );
+
+scene.add(
+    ambientLight
+);
+
+
+const sunLight =
+    new THREE.DirectionalLight(
+        0xffffff,
+        2.2
+    );
+
+sunLight.position.set(
+    100,
+    150,
+    80
+);
+
+scene.add(
+    sunLight
+);
+
+
+/* =========================================================
+   WORLD
+========================================================= */
+
+const world =
+    new THREE.Group();
+
+scene.add(
+    world
+);
+
+
+/* =========================================================
+   GROUND
+========================================================= */
+
+const groundGeometry =
+    new THREE.PlaneGeometry(
+        1000,
+        1000
+    );
+
+const groundMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0x303030,
+        roughness: 1
+    });
+
+const ground =
+    new THREE.Mesh(
+        groundGeometry,
+        groundMaterial
+    );
+
+ground.rotation.x =
+    -Math.PI / 2;
+
+ground.position.y =
+    0;
+
+world.add(
+    ground
+);
+
+
+/* =========================================================
+   GRID
+========================================================= */
+
+const grid =
+    new THREE.GridHelper(
+        1000,
+        100,
+        0x666666,
+        0x333333
+    );
+
+grid.position.y =
+    0.01;
+
+world.add(
+    grid
+);
+
+
+/* =========================================================
+   BUILDINGS
+========================================================= */
+
+const locations = [];
+
+
+function createBuilding({
+    id,
+    name,
+    description,
+    x,
+    z,
+    width,
+    depth,
+    height
+}) {
+
+    const geometry =
+        new THREE.BoxGeometry(
+            width,
+            height,
+            depth
+        );
+
+    const material =
+        new THREE.MeshStandardMaterial({
+            color: 0x555555,
+            roughness: 0.8
+        });
+
+    const building =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+    building.position.set(
+        x,
+        height / 2,
+        z
+    );
+
+    building.userData = {
+        id,
+        name,
+        description,
+        interactive: true,
+        width,
+        depth
     };
 
-    const places = [
-        {
-            id: "main-gate",
-            x: 0,
-            y: -260,
-            width: 180,
-            height: 70,
-            title: "Mukti Mahal Main Gate",
-            description:
-                "The main entrance of Mukti Mahal."
-        },
-        {
-            id: "central-hall",
-            x: 0,
-            y: -80,
-            width: 240,
-            height: 120,
-            title: "Central Hall",
-            description:
-                "The central space of the Mukti Mahal world."
-        },
-        {
-            id: "creator-studio",
-            x: -300,
-            y: 80,
-            width: 170,
-            height: 100,
-            title: "Creator Studio",
-            description:
-                "A creation space for photography, video, music and digital media."
-        },
-        {
-            id: "cinema",
-            x: 300,
-            y: 80,
-            width: 170,
-            height: 100,
-            title: "Cinema",
-            description:
-                "The cinematic creation and viewing area of Mukti Mahal."
-        },
-        {
-            id: "gaming-area",
-            x: -300,
-            y: 280,
-            width: 170,
-            height: 100,
-            title: "Gaming Area",
-            description:
-                "An interactive area inside the Mukti Mahal world."
-        },
-        {
-            id: "music-room",
-            x: 300,
-            y: 280,
-            width: 170,
-            height: 100,
-            title: "Music Room",
-            description:
-                "A space for music and audio creation."
-        }
-    ];
+    world.add(
+        building
+    );
 
-    function resize() {
-        const ratio = window.devicePixelRatio || 1;
+    locations.push(
+        building
+    );
 
-        canvas.width = window.innerWidth * ratio;
-        canvas.height = window.innerHeight * ratio;
+    return building;
+}
 
-        canvas.style.width = `${window.innerWidth}px`;
-        canvas.style.height = `${window.innerHeight}px`;
 
-        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    }
+/* =========================================================
+   MUKTI MAHAL LOCATIONS
+========================================================= */
 
-    function isPressed(...names) {
-        return names.some(name => keys.has(name));
-    }
+createBuilding({
+    id: "main-gate",
+    name: "MUKTI MAHAL MAIN GATE",
+    description:
+        "The main entrance into the Mukti Mahal world.",
+    x: 0,
+    z: -90,
+    width: 30,
+    depth: 12,
+    height: 10
+});
 
-    function update() {
-        let dx = 0;
-        let dy = 0;
 
-        if (isPressed("w", "W", "ArrowUp")) {
-            dy -= 1;
-        }
+createBuilding({
+    id: "central-hall",
+    name: "CENTRAL HALL",
+    description:
+        "The central gathering and activity area of Mukti Mahal.",
+    x: 0,
+    z: -35,
+    width: 34,
+    depth: 24,
+    height: 12
+});
 
-        if (isPressed("s", "S", "ArrowDown")) {
-            dy += 1;
-        }
 
-        if (isPressed("a", "A", "ArrowLeft")) {
-            dx -= 1;
-        }
+createBuilding({
+    id: "creator-studio",
+    name: "CREATOR STUDIO",
+    description:
+        "A creation area for photography, video, design, music and digital media.",
+    x: -55,
+    z: 0,
+    width: 25,
+    depth: 20,
+    height: 10
+});
 
-        if (isPressed("d", "D", "ArrowRight")) {
-            dx += 1;
-        }
 
-        if (dx !== 0 || dy !== 0) {
-            const length = Math.sqrt(dx * dx + dy * dy);
+createBuilding({
+    id: "cinema",
+    name: "CINEMA",
+    description:
+        "The cinematic space of Mukti Mahal.",
+    x: 55,
+    z: 0,
+    width: 25,
+    depth: 20,
+    height: 10
+});
 
-            player.x += (dx / length) * player.speed;
-            player.y += (dy / length) * player.speed;
-        }
-    }
 
-    function worldToScreen(x, y) {
-        return {
-            x: window.innerWidth / 2 + x - player.x,
-            y: window.innerHeight / 2 + y - player.y
-        };
-    }
+createBuilding({
+    id: "gaming-area",
+    name: "GAMING AREA",
+    description:
+        "An interactive entertainment area inside Mukti Mahal.",
+    x: -55,
+    z: 55,
+    width: 25,
+    depth: 20,
+    height: 10
+});
 
-    function drawBackground() {
-        ctx.fillStyle = "#101010";
-        ctx.fillRect(
-            0,
-            0,
-            window.innerWidth,
-            window.innerHeight
-        );
 
-        ctx.strokeStyle = "rgba(255,255,255,0.05)";
-        ctx.lineWidth = 1;
+createBuilding({
+    id: "music-room",
+    name: "MUSIC ROOM",
+    description:
+        "A music and audio creation space.",
+    x: 55,
+    z: 55,
+    width: 25,
+    depth: 20,
+    height: 10
+});
 
-        const grid = 50;
 
-        for (
-            let x = -1000;
-            x <= 1000;
-            x += grid
-        ) {
-            const screen = worldToScreen(x, 0);
+/* =========================================================
+   PLAYER
+========================================================= */
 
-            ctx.beginPath();
-            ctx.moveTo(screen.x, 0);
-            ctx.lineTo(screen.x, window.innerHeight);
-            ctx.stroke();
-        }
+const playerGeometry =
+    new THREE.CapsuleGeometry(
+        0.65,
+        1.6,
+        6,
+        12
+    );
 
-        for (
-            let y = -1000;
-            y <= 1000;
-            y += grid
-        ) {
-            const screen = worldToScreen(0, y);
+const playerMaterial =
+    new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.6
+    });
 
-            ctx.beginPath();
-            ctx.moveTo(0, screen.y);
-            ctx.lineTo(window.innerWidth, screen.y);
-            ctx.stroke();
-        }
-    }
+const player =
+    new THREE.Mesh(
+        playerGeometry,
+        playerMaterial
+    );
 
-    function drawPlace(place) {
-        const position = worldToScreen(place.x, place.y);
+player.position.set(
+    0,
+    1.45,
+    -115
+);
 
-        ctx.fillStyle = "rgba(255,255,255,0.08)";
-        ctx.fillRect(
-            position.x - place.width / 2,
-            position.y - place.height / 2,
-            place.width,
-            place.height
-        );
+world.add(
+    player
+);
 
-        ctx.strokeStyle = "rgba(255,255,255,0.3)";
-        ctx.strokeRect(
-            position.x - place.width / 2,
-            position.y - place.height / 2,
-            place.width,
-            place.height
-        );
 
-        ctx.fillStyle = "#fff";
-        ctx.textAlign = "center";
-        ctx.font = "bold 15px Century Schoolbook";
+/* =========================================================
+   PLAYER COLLISION
+========================================================= */
 
-        ctx.fillText(
-            place.title,
-            position.x,
-            position.y + 5
-        );
-    }
+const playerRadius =
+    1.2;
 
-    function drawPlayer() {
-        const x = window.innerWidth / 2;
-        const y = window.innerHeight / 2;
 
-        ctx.beginPath();
-        ctx.arc(
-            x,
-            y,
-            player.size,
-            0,
-            Math.PI * 2
-        );
+function collidesWithBuilding(
+    nextX,
+    nextZ
+) {
 
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
+    for (
+        const building
+        of locations
+    ) {
 
-        ctx.strokeStyle = "#000000";
-        ctx.stroke();
-    }
+        const data =
+            building.userData;
 
-    function distanceToPlace(place) {
-        const dx = player.x - place.x;
-        const dy = player.y - place.y;
+        const halfWidth =
+            data.width / 2;
 
-        return Math.sqrt(dx * dx + dy * dy);
-    }
+        const halfDepth =
+            data.depth / 2;
 
-    function nearestPlace() {
-        let nearest = null;
-        let nearestDistance = Infinity;
+        const minX =
+            building.position.x -
+            halfWidth -
+            playerRadius;
 
-        for (const place of places) {
-            const distance = distanceToPlace(place);
+        const maxX =
+            building.position.x +
+            halfWidth +
+            playerRadius;
 
-            if (distance < nearestDistance) {
-                nearest = place;
-                nearestDistance = distance;
-            }
-        }
+        const minZ =
+            building.position.z -
+            halfDepth -
+            playerRadius;
 
-        return {
-            place: nearest,
-            distance: nearestDistance
-        };
-    }
-
-    function interact() {
-        const result = nearestPlace();
-
-        if (!result.place || result.distance > 120) {
-            return;
-        }
-
-        interactionTitle.textContent =
-            result.place.title;
-
-        interactionDescription.textContent =
-            result.place.description;
-
-        panel.classList.remove("hidden");
-    }
-
-    function draw() {
-        drawBackground();
-
-        for (const place of places) {
-            drawPlace(place);
-        }
-
-        drawPlayer();
-
-        const result = nearestPlace();
-
-        if (result.place && result.distance <= 120) {
-            status.textContent =
-                `NEAR: ${result.place.title} — PRESS E`;
-        } else {
-            status.textContent =
-                "MUKTI MAHAL — EXPLORE";
-        }
-    }
-
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
-
-    window.addEventListener("resize", resize);
-
-    window.addEventListener("keydown", event => {
-        keys.add(event.key);
+        const maxZ =
+            building.position.z +
+            halfDepth +
+            playerRadius;
 
         if (
-            event.key === "e" ||
-            event.key === "E"
+            nextX >= minX &&
+            nextX <= maxX &&
+            nextZ >= minZ &&
+            nextZ <= maxZ
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+const keys =
+    new Set();
+
+
+window.addEventListener(
+    "keydown",
+    event => {
+
+        const key =
+            event.key.toLowerCase();
+
+        keys.add(key);
+
+        if (
+            key === "e"
         ) {
             interact();
         }
-    });
 
-    window.addEventListener("keyup", event => {
-        keys.delete(event.key);
-    });
-
-    closeInteraction.addEventListener(
-        "click",
-        () => {
-            panel.classList.add("hidden");
+        if (
+            key === "shift"
+        ) {
+            keys.add(
+                "shift"
+            );
         }
+    }
+);
+
+
+window.addEventListener(
+    "keyup",
+    event => {
+
+        keys.delete(
+            event.key.toLowerCase()
+        );
+    }
+);
+
+
+/* =========================================================
+   MOBILE INPUT
+========================================================= */
+
+document
+    .querySelectorAll(
+        "[data-key]"
+    )
+    .forEach(button => {
+
+        const key =
+            button.dataset.key;
+
+        const start =
+            event => {
+
+                event.preventDefault();
+
+                keys.add(key);
+            };
+
+        const stop =
+            event => {
+
+                event.preventDefault();
+
+                keys.delete(key);
+            };
+
+        button.addEventListener(
+            "pointerdown",
+            start
+        );
+
+        button.addEventListener(
+            "pointerup",
+            stop
+        );
+
+        button.addEventListener(
+            "pointercancel",
+            stop
+        );
+
+        button.addEventListener(
+            "pointerleave",
+            stop
+        );
+    });
+
+
+mobileInteract.addEventListener(
+    "click",
+    () => {
+        interact();
+    }
+);
+
+
+/* =========================================================
+   PLAYER MOVEMENT
+========================================================= */
+
+function updatePlayer() {
+
+    let x =
+        player.position.x;
+
+    let z =
+        player.position.z;
+
+    let dx = 0;
+
+    let dz = 0;
+
+
+    if (
+        keys.has("w") ||
+        keys.has("arrowup")
+    ) {
+        dz -= 1;
+    }
+
+
+    if (
+        keys.has("s") ||
+        keys.has("arrowdown")
+    ) {
+        dz += 1;
+    }
+
+
+    if (
+        keys.has("a") ||
+        keys.has("arrowleft")
+    ) {
+        dx -= 1;
+    }
+
+
+    if (
+        keys.has("d") ||
+        keys.has("arrowright")
+    ) {
+        dx += 1;
+    }
+
+
+    if (
+        dx === 0 &&
+        dz === 0
+    ) {
+        return;
+    }
+
+
+    const length =
+        Math.sqrt(
+            dx * dx +
+            dz * dz
+        );
+
+
+    dx /= length;
+    dz /= length;
+
+
+    let speed =
+        0.22;
+
+
+    if (
+        keys.has("shift")
+    ) {
+        speed =
+            0.42;
+    }
+
+
+    const nextX =
+        x + dx * speed;
+
+    const nextZ =
+        z + dz * speed;
+
+
+    /*
+     * Collision on X axis.
+     */
+
+    if (
+        !collidesWithBuilding(
+            nextX,
+            z
+        )
+    ) {
+        x = nextX;
+    }
+
+
+    /*
+     * Collision on Z axis.
+     */
+
+    if (
+        !collidesWithBuilding(
+            x,
+            nextZ
+        )
+    ) {
+        z = nextZ;
+    }
+
+
+    player.position.x =
+        x;
+
+    player.position.z =
+        z;
+}
+
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+function updateCamera() {
+
+    const target =
+        new THREE.Vector3(
+            player.position.x,
+            player.position.y + 1.5,
+            player.position.z
+        );
+
+
+    const desired =
+        new THREE.Vector3(
+            player.position.x,
+            player.position.y + 9,
+            player.position.z + 14
+        );
+
+
+    camera.position.lerp(
+        desired,
+        0.08
     );
 
-    resize();
-    loop();
-})();
+
+    camera.lookAt(
+        target
+    );
+}
+
+
+/* =========================================================
+   INTERACTION
+========================================================= */
+
+function getNearestLocation() {
+
+    let nearest =
+        null;
+
+    let nearestDistance =
+        Infinity;
+
+
+    for (
+        const location
+        of locations
+    ) {
+
+        const dx =
+            player.position.x -
+            location.position.x;
+
+        const dz =
+            player.position.z -
+            location.position.z;
+
+        const distance =
+            Math.sqrt(
+                dx * dx +
+                dz * dz
+            );
+
+
+        if (
+            distance <
+            nearestDistance
+        ) {
+
+            nearest =
+                location;
+
+            nearestDistance =
+                distance;
+        }
+    }
+
+
+    return {
+        location: nearest,
+        distance: nearestDistance
+    };
+}
+
+
+function interact() {
+
+    const result =
+        getNearestLocation();
+
+
+    if (
+        !result.location ||
+        result.distance > 18
+    ) {
+        return;
+    }
+
+
+    const data =
+        result.location.userData;
+
+
+    interactionTitle.textContent =
+        data.name;
+
+
+    interactionDescription.textContent =
+        data.description;
+
+
+    interactionPanel.classList.remove(
+        "hidden"
+    );
+}
+
+
+interactionClose.addEventListener(
+    "click",
+    () => {
+
+        interactionPanel.classList.add(
+            "hidden"
+        );
+    }
+);
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function updateStatus() {
+
+    const result =
+        getNearestLocation();
+
+
+    if (
+        result.location &&
+        result.distance <= 18
+    ) {
+
+        runtimeStatus.textContent =
+            `${result.location.userData.name} — PRESS E`;
+
+        return;
+    }
+
+
+    runtimeStatus.textContent =
+        "MUKTI MAHAL — EXPLORE";
+}
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+    }
+);
+
+
+/* =========================================================
+   START
+========================================================= */
+
+camera.position.set(
+    0,
+    9,
+    -101
+);
+
+
+camera.lookAt(
+    player.position
+);
+
+
+/* =========================================================
+   MAIN LOOP
+========================================================= */
+
+function animate() {
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    updatePlayer();
+
+    updateCamera();
+
+    updateStatus();
+
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+
+runtimeStatus.textContent =
+    "MUKTI MAHAL — PLAYABLE WORLD";
+
+
+animate();
