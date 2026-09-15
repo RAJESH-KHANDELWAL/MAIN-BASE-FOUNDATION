@@ -25,6 +25,7 @@ from backend.api.storage import StorageAPI
 from backend.api.opportunities import router as opportunities_router
 from backend.api.dns import router as dns_router
 from backend.api.infrastructure import router as infrastructure_router
+from backend.api.mukti_mahal import router as mukti_mahal_router
 
 
 app = FastAPI(
@@ -68,6 +69,7 @@ app.include_router(matching_router)
 app.include_router(profiles_router)
 app.include_router(dns_router)
 app.include_router(infrastructure_router)
+app.include_router(mukti_mahal_router)
 
 # ==========================
 # CONNECTIVITY
