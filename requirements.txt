@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 flask
 openai
+google-genai
 transformers
 python-dotenv
 httpx
