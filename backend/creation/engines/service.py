@@ -1,18 +1,8 @@
 """
 MUKTI MAHAL
-CREATION ENGINE ROUTER
+CREATION ENGINE
 
 Central routing layer for real AI content creation.
-
-Supported creation types:
-PHOTO
-VIDEO
-MOVIE
-MUSIC
-DESIGN
-GAME
-
-MUKTI MAHAL itself is the game/world/experience.
 """
 
 from __future__ import annotations
@@ -20,6 +10,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict
 from uuid import uuid4
+
+from backend.creation.providers.photo_provider import (
+    PhotoProvider,
+)
 
 
 SUPPORTED_TYPES = {
@@ -37,13 +31,10 @@ def utc_now() -> str:
 
 
 class GenerationEngineService:
-    """
-    Routes MUKTI MAHAL creation requests to the
-    appropriate real generation engine.
 
-    This class deliberately does not fabricate output URLs,
-    files, completed statuses, or provider results.
-    """
+    def __init__(self) -> None:
+
+        self.photo_provider = PhotoProvider()
 
     def create_request(
         self,
@@ -56,6 +47,7 @@ class GenerationEngineService:
 
         creation_type = creation_type.strip().upper()
         prompt = prompt.strip()
+        settings = settings or {}
 
         if creation_type not in SUPPORTED_TYPES:
             raise ValueError(
@@ -71,21 +63,67 @@ class GenerationEngineService:
             f"MM-GEN-{uuid4().hex[:12].upper()}"
         )
 
-        engine = self._resolve_engine(
-            creation_type
-        )
+        if creation_type == "PHOTO":
+
+            return self._create_photo(
+                generation_id=generation_id,
+                prompt=prompt,
+                model=model,
+                settings=settings,
+                user_id=user_id,
+            )
 
         return {
             "generation_id": generation_id,
             "system": "MUKTI MAHAL",
             "creation_type": creation_type,
-            "engine": engine,
+            "engine": self._resolve_engine(
+                creation_type
+            ),
             "prompt": prompt,
             "model": model,
-            "settings": settings or {},
+            "settings": settings,
             "user_id": user_id,
             "status": "QUEUED",
             "created_at": utc_now(),
+            "message": (
+                f"{creation_type} provider is "
+                "not connected yet."
+            ),
+        }
+
+    def _create_photo(
+        self,
+        generation_id: str,
+        prompt: str,
+        model: str | None,
+        settings: Dict[str, Any],
+        user_id: str | None,
+    ) -> Dict[str, Any]:
+
+        selected_model = (
+            model or "gpt-image-1"
+        )
+
+        size = settings.get(
+            "size",
+            "1024x1024",
+        )
+
+        result = self.photo_provider.generate(
+            prompt=prompt,
+            model=selected_model,
+            size=size,
+        )
+
+        return {
+            "generation_id": generation_id,
+            "system": "MUKTI MAHAL",
+            "creation_type": "PHOTO",
+            "engine": "PHOTO_GENERATION",
+            "user_id": user_id,
+            "created_at": utc_now(),
+            "result": result,
         }
 
     def _resolve_engine(
@@ -112,12 +150,12 @@ class GenerationEngineService:
             "supported_types": sorted(
                 SUPPORTED_TYPES
             ),
-            "engines": {
-                "PHOTO": "PHOTO_GENERATION",
-                "VIDEO": "VIDEO_GENERATION",
-                "MOVIE": "MOVIE_PRODUCTION",
-                "MUSIC": "MUSIC_GENERATION",
-                "DESIGN": "DESIGN_GENERATION",
-                "GAME": "MUKTI_MAHAL_WORLD_GENERATION",
+            "providers": {
+                "PHOTO": self.photo_provider.status(),
+                "VIDEO": "NOT_CONNECTED",
+                "MOVIE": "NOT_CONNECTED",
+                "MUSIC": "NOT_CONNECTED",
+                "DESIGN": "NOT_CONNECTED",
+                "GAME": "NOT_CONNECTED",
             },
         }
