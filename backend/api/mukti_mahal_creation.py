@@ -17,8 +17,7 @@ router = APIRouter(
 )
 
 
-video_service =
-    VideoCreationService()
+video_service = VideoCreationService()
 
 
 class VideoCreateRequest(BaseModel):
