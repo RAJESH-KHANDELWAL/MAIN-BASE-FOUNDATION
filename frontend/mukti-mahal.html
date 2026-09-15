@@ -2,11 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Mukti Mahal</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
 
-    <link rel="stylesheet" href="/frontend/mukti-mahal.css">
+    <meta
+        name="description"
+        content="Mukti Mahal — an interactive digital world."
+    >
+
+    <title>MUKTI MAHAL</title>
+
+    <link
+        rel="stylesheet"
+        href="/frontend/mukti-mahal.css"
+    >
 </head>
 
 <body>
@@ -15,31 +27,145 @@
 
         <canvas id="mahal-canvas"></canvas>
 
-        <section id="hud">
-            <div class="brand">MUKTI MAHAL</div>
+        <!-- TOP HUD -->
+        <header id="hud">
 
-            <div class="status">
-                <span id="runtime-status">MUKTI MAHAL</span>
+            <div class="hud-brand">
+                <div class="hud-title">
+                    MUKTI MAHAL
+                </div>
+
+                <div class="hud-subtitle">
+                    DIGITAL WORLD
+                </div>
             </div>
 
-            <div class="instructions">
-                <strong>W A S D</strong> — Move
-                <br>
-                <strong>Arrow Keys</strong> — Move
-                <br>
-                <strong>E</strong> — Interact
+            <div
+                id="runtime-status"
+                class="runtime-status"
+            >
+                LOADING MUKTI MAHAL...
+            </div>
+
+        </header>
+
+
+        <!-- DESKTOP CONTROLS -->
+        <section
+            id="desktop-controls"
+            class="controls"
+        >
+            <div class="controls-title">
+                CONTROLS
+            </div>
+
+            <div>
+                <strong>W A S D</strong>
+                — MOVE
+            </div>
+
+            <div>
+                <strong>SHIFT</strong>
+                — RUN
+            </div>
+
+            <div>
+                <strong>E</strong>
+                — INTERACT
             </div>
         </section>
 
-        <section id="interaction-panel" class="hidden">
-            <div id="interaction-title"></div>
-            <div id="interaction-description"></div>
-            <button id="close-interaction">CLOSE</button>
+
+        <!-- INTERACTION -->
+        <section
+            id="interaction-panel"
+            class="interaction-panel hidden"
+            aria-live="polite"
+        >
+
+            <div
+                id="interaction-title"
+                class="interaction-title"
+            ></div>
+
+            <div
+                id="interaction-description"
+                class="interaction-description"
+            ></div>
+
+            <button
+                id="interaction-close"
+                type="button"
+            >
+                CLOSE
+            </button>
+
+        </section>
+
+
+        <!-- MOBILE CONTROLS -->
+        <section
+            id="mobile-controls"
+            class="mobile-controls"
+        >
+
+            <button
+                class="move-button"
+                data-key="w"
+                aria-label="Move forward"
+            >
+                ▲
+            </button>
+
+            <div class="move-row">
+
+                <button
+                    class="move-button"
+                    data-key="a"
+                    aria-label="Move left"
+                >
+                    ◀
+                </button>
+
+                <button
+                    class="move-button"
+                    data-key="s"
+                    aria-label="Move backward"
+                >
+                    ▼
+                </button>
+
+                <button
+                    class="move-button"
+                    data-key="d"
+                    aria-label="Move right"
+                >
+                    ▶
+                </button>
+
+            </div>
+
+            <button
+                id="mobile-interact"
+                class="interact-button"
+                type="button"
+            >
+                INTERACT
+            </button>
+
         </section>
 
     </main>
 
-    <script src="/frontend/mukti-mahal.js"></script>
+
+    <!--
+        Three.js is used only as the browser rendering engine.
+        Mukti Mahal itself remains the game/world.
+    -->
+    <script
+        type="module"
+        src="/frontend/mukti-mahal.js"
+    ></script>
 
 </body>
 </html>
