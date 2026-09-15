@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mukti Mahal — Content</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font-family: "Century Schoolbook", "Libre Baskerville", serif;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: rgba(0,0,0,.94);
+            border-bottom: 1px solid #222;
+            padding: 18px 24px;
+        }
+
+        .brand {
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            margin-top: 5px;
+            color: #aaa;
+            font-size: 13px;
+        }
+
+        nav {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            margin-top: 18px;
+        }
+
+        nav button {
+            border: 1px solid #333;
+            background: #111;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        nav button.active,
+        nav button:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: auto;
+            padding: 28px 22px 60px;
+        }
+
+        .hero {
+            min-height: 330px;
+            display: flex;
+            align-items: end;
+            padding: 35px;
+            border-radius: 22px;
+            background:
+                linear-gradient(to top, #000, transparent 75%);
+            border: 1px solid #222;
+            margin-bottom: 35px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(32px, 5vw, 62px);
+        }
+
+        .hero p {
+            color: #bbb;
+            max-width: 700px;
+            line-height: 1.7;
+        }
+
+        .section-title {
+            font-size: 28px;
+            margin: 30px 0 18px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #0c0c0c;
+            border: 1px solid #222;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform .2s ease, border-color .2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #555;
+        }
+
+        .thumb {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            background: #151515;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .placeholder {
+            font-size: 48px;
+            opacity: .45;
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        .type {
+            color: #888;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .title {
+            font-size: 19px;
+            font-weight: 800;
+            margin-top: 7px;
+        }
+
+        .description {
+            color: #aaa;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 8px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .actions button,
+        .actions a {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #151515;
+            color: #fff;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .actions button:hover,
+        .actions a:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        .empty {
+            padding: 70px 20px;
+            text-align: center;
+            border: 1px dashed #333;
+            border-radius: 18px;
+            color: #777;
+        }
+
+        .empty strong {
+            display: block;
+            color: #aaa;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        dialog {
+            width: min(1100px, 94vw);
+            max-height: 92vh;
+            padding: 0;
+            border: 1px solid #333;
+            border-radius: 18px;
+            background: #050505;
+            color: #fff;
+        }
+
+        dialog::backdrop {
+            background: rgba(0,0,0,.85);
+        }
+
+        .viewer {
+            padding: 20px;
+        }
+
+        .viewer video,
+        .viewer img {
+            display: block;
+            width: 100%;
+            max-height: 72vh;
+            object-fit: contain;
+            background: #000;
+            border-radius: 12px;
+        }
+
+        .viewer audio {
+            width: 100%;
+            margin: 30px 0;
+        }
+
+        .viewer h2 {
+            margin-top: 20px;
+        }
+
+        .close {
+            float: right;
+            border: 0;
+            background: #222;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            main {
+                padding: 18px 14px 40px;
+            }
+
+            .hero {
+                min-height: 280px;
+                padding: 22px;
+            }
+
+            .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .card-body {
+                padding: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="brand">MUKTI MAHAL</div>
+    <div class="subtitle">
+        Digital Content • Games • Movies • Videos • Photos • Music
+    </div>
+
+    <nav>
+        <button class="active" data-filter="ALL">ALL</button>
+        <button data-filter="GAME">GAMES</button>
+        <button data-filter="MOVIE">MOVIES</button>
+        <button data-filter="VIDEO">VIDEOS</button>
+        <button data-filter="PHOTO">PHOTOS</button>
+        <button data-filter="AUDIO">MUSIC</button>
+        <button data-filter="DESIGN">DESIGN</button>
+        <button data-filter="SOFTWARE">SOFTWARE</button>
+    </nav>
+</header>
+
+<main>
+
+    <section class="hero">
+        <div>
+            <h1>Real Content.</h1>
+            <p>
+                Mukti Mahal is a living digital ecosystem where real
+                photos, videos, movies, games, music and creative work
+                can be published and experienced.
+            </p>
+        </div>
+    </section>
+
+    <h2 class="section-title">Published Content</h2>
+
+    <section id="contentGrid" class="grid"></section>
+
+</main>
+
+<dialog id="viewer">
+    <div class="viewer">
+        <button class="close" onclick="closeViewer()">CLOSE</button>
+        <div id="viewerContent"></div>
+    </div>
+</dialog>
+
+<script>
+const API =
+    "https://rajeshkhandelwalofficial.onrender.com";
+
+let assets = [];
+let currentFilter = "ALL";
+
+const grid = document.getElementById("contentGrid");
+const viewer = document.getElementById("viewer");
+const viewerContent = document.getElementById("viewerContent");
+
+document.querySelectorAll("nav button").forEach(button => {
+    button.addEventListener("click", () => {
+        document.querySelectorAll("nav button")
+            .forEach(b => b.classList.remove("active"));
+
+        button.classList.add("active");
+
+        currentFilter = button.dataset.filter;
+
+        render();
+    });
+});
+
+async function loadContent() {
+    try {
+        const response = await fetch(
+            `${API}/mukti-mahal/media/assets`
+        );
+
+        if (!response.ok) {
+            throw new Error("Content API unavailable");
+        }
+
+        assets = await response.json();
+
+        if (!Array.isArray(assets)) {
+            assets = assets.data || [];
+        }
+
+        render();
+
+    } catch (error) {
+        console.error(error);
+
+        assets = [];
+
+        grid.innerHTML = `
+            <div class="empty">
+                <strong>Content is not available yet.</strong>
+                The Mukti Mahal content system is ready.
+            </div>
+        `;
+    }
+}
+
+function render() {
+
+    const filtered =
+        currentFilter === "ALL"
+            ? assets
+            : assets.filter(
+                item =>
+                    String(item.asset_type || "")
+                        .toUpperCase() === currentFilter
+              );
+
+    if (!filtered.length) {
+        grid.innerHTML = `
+            <div class="empty">
+                <strong>No published content yet.</strong>
+                Real content will appear here after it is uploaded
+                and published.
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = filtered.map(asset => {
+
+        const type =
+            String(asset.asset_type || "OTHER").toUpperCase();
+
+        const title =
+            escapeHTML(asset.title || "Untitled");
+
+        const description =
+            escapeHTML(asset.description || "");
+
+        const url =
+            asset.file_url || "";
+
+        let thumbnail = `
+            <div class="placeholder">◆</div>
+        `;
+
+        if (type === "PHOTO" && url) {
+            thumbnail = `
+                <img
+                    src="${escapeAttribute(url)}"
+                    alt="${escapeAttribute(title)}"
+                    loading="lazy"
+                >
+            `;
+        }
+
+        return `
+            <article class="card">
+
+                <div class="thumb">
+                    ${thumbnail}
+                </div>
+
+                <div class="card-body">
+
+                    <div class="type">${type}</div>
+
+                    <div class="title">
+                        ${title}
+                    </div>
+
+                    ${
+                        description
+                        ? `<div class="description">
+                             ${description}
+                           </div>`
+                        : ""
+                    }
+
+                    <div class="actions">
+
+                        <button
+                            onclick='openAsset(${JSON.stringify(asset)})'>
+                            ${
+                                type === "GAME"
+                                ? "PLAY"
+                                : type === "PHOTO"
+                                ? "VIEW"
+                                : type === "AUDIO"
+                                ? "LISTEN"
+                                : "WATCH"
+                            }
+                        </button>
+
+                        ${
+                            url
+                            ? `<a
+                                href="${escapeAttribute(url)}"
+                                target="_blank"
+                                rel="noopener">
+                                OPEN
+                               </a>`
+                            : ""
+                        }
+
+                    </div>
+
+                </div>
+
+            </article>
+        `;
+
+    }).join("");
+}
+
+function openAsset(asset) {
+
+    const type =
+        String(asset.asset_type || "OTHER").toUpperCase();
+
+    const url =
+        asset.file_url || "";
+
+    const title =
+        escapeHTML(asset.title || "Untitled");
+
+    const description =
+        escapeHTML(asset.description || "");
+
+    if (!url) {
+        viewerContent.innerHTML = `
+            <h2>${title}</h2>
+            <p>
+                This content has been registered but its real
+                media file has not been published yet.
+            </p>
+        `;
+
+        viewer.showModal();
+        return;
+    }
+
+    if (type === "PHOTO") {
+
+        viewerContent.innerHTML = `
+            <h2>${title}</h2>
+            <img
+                src="${escapeAttribute(url)}"
+                alt="${escapeAttribute(title)}"
+            >
+            <p>${description}</p>
+        `;
+
+    } else if (
+        type === "VIDEO" ||
+        type === "MOVIE"
+    ) {
+
+        viewerContent.innerHTML = `
+            <h2>${title}</h2>
+            <video
+                controls
+                autoplay
+                playsinline
+                src="${escapeAttribute(url)}">
+            </video>
+            <p>${description}</p>
+        `;
+
+    } else if (type === "AUDIO") {
+
+        viewerContent.innerHTML = `
+            <h2>${title}</h2>
+            <audio
+                controls
+                autoplay
+                src="${escapeAttribute(url)}">
+            </audio>
+            <p>${description}</p>
+        `;
+
+    } else if (type === "GAME") {
+
+        viewerContent.innerHTML = `
+            <h2>${title}</h2>
+            <iframe
+                src="${escapeAttribute(url)}"
+                style="
+                    width:100%;
+                    height:70vh;
+                    border:0;
+                    border-radius:12px;
+                    background:#000;
+                "
+                allowfullscreen>
+            </iframe>
+            <p>${description}</p>
+        `;
+
+    } else {
+
+        viewerContent.innerHTML = `
+            <h2>${title}</h2>
+            <p>${description}</p>
+
+            <a
+                href="${escapeAttribute(url)}"
+                target="_blank"
+                rel="noopener"
+                style="
+                    display:inline-block;
+                    padding:12px 18px;
+                    background:#fff;
+                    color:#000;
+                    border-radius:8px;
+                    text-decoration:none;
+                ">
+                OPEN CONTENT
+            </a>
+        `;
+    }
+
+    viewer.showModal();
+}
+
+function closeViewer() {
+    viewer.close();
+    viewerContent.innerHTML = "";
+}
+
+function escapeHTML(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function escapeAttribute(value) {
+    return escapeHTML(value);
+}
+
+loadContent();
+</script>
+
+</body>
+</html>
