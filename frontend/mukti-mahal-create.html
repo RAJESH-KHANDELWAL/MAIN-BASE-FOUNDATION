@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>MUKTI MAHAL — AI CREATION</title>
+
+    <link
+        rel="stylesheet"
+        href="/frontend/mukti-mahal-create.css"
+    >
+</head>
+
+<body>
+
+<main id="creation-app">
+
+    <header class="creation-header">
+
+        <div>
+            <div class="brand">
+                MUKTI MAHAL
+            </div>
+
+            <div class="subtitle">
+                AI CREATION
+            </div>
+        </div>
+
+        <a
+            href="/frontend/mukti-mahal.html"
+            class="back-button"
+        >
+            BACK TO MUKTI MAHAL
+        </a>
+
+    </header>
+
+
+    <section class="creation-container">
+
+        <div class="creation-card">
+
+            <div class="section-label">
+                CREATE REAL VIDEO
+            </div>
+
+            <h1>
+                Turn Your Idea Into Video
+            </h1>
+
+            <p class="intro">
+                Describe the video you want to create.
+                The request will be sent to the connected
+                AI video generation system.
+            </p>
+
+
+            <label
+                for="video-prompt"
+                class="field-label"
+            >
+                VIDEO PROMPT
+            </label>
+
+            <textarea
+                id="video-prompt"
+                placeholder="Describe your video..."
+                maxlength="32000"
+            ></textarea>
+
+
+            <div class="options">
+
+                <div class="option">
+
+                    <label
+                        for="video-model"
+                        class="field-label"
+                    >
+                        MODEL
+                    </label>
+
+                    <select id="video-model">
+
+                        <option value="sora-2">
+                            Sora 2
+                        </option>
+
+                        <option value="sora-2-pro">
+                            Sora 2 Pro
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="option">
+
+                    <label
+                        for="video-seconds"
+                        class="field-label"
+                    >
+                        DURATION
+                    </label>
+
+                    <select id="video-seconds">
+
+                        <option value="4">
+                            4 seconds
+                        </option>
+
+                        <option value="8">
+                            8 seconds
+                        </option>
+
+                        <option value="12">
+                            12 seconds
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="option">
+
+                    <label
+                        for="video-size"
+                        class="field-label"
+                    >
+                        SIZE
+                    </label>
+
+                    <select id="video-size">
+
+                        <option value="1280x720">
+                            1280 × 720
+                        </option>
+
+                        <option value="720x1280">
+                            720 × 1280
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <button
+                id="create-video"
+                type="button"
+            >
+                CREATE VIDEO
+            </button>
+
+
+            <div
+                id="creation-status"
+                class="creation-status"
+            >
+                READY
+            </div>
+
+        </div>
+
+
+        <div
+            id="result-card"
+            class="result-card hidden"
+        >
+
+            <div class="section-label">
+                CREATION RESULT
+            </div>
+
+            <h2 id="result-title">
+                VIDEO
+            </h2>
+
+            <div
+                id="result-progress"
+                class="result-progress"
+            >
+                PROCESSING...
+            </div>
+
+            <video
+                id="generated-video"
+                class="generated-video hidden"
+                controls
+                playsinline
+            ></video>
+
+            <pre
+                id="result-data"
+                class="result-data"
+            ></pre>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script
+    type="module"
+    src="/frontend/mukti-mahal-create.js"
+></script>
+
+</body>
+</html>
