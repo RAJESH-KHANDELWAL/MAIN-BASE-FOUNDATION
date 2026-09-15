@@ -1,57 +1,73 @@
 """
 MUKTI MAHAL
-AI CREATION API
+UNIFIED AI CREATION API
 """
+
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.creation.video_service import (
-    VideoCreationService,
+from backend.creation.service import (
+    CreationService,
 )
 
 
 router = APIRouter(
     prefix="/mukti-mahal/creation",
-    tags=["Mukti Mahal AI Creation"],
+    tags=["Mukti Mahal Creation"],
 )
 
 
-video_service = VideoCreationService()
+creation_service = CreationService()
 
 
-class VideoCreateRequest(BaseModel):
+class CreationRequest(BaseModel):
+    creation_type: str = Field(
+        min_length=1,
+        max_length=32,
+    )
 
     prompt: str = Field(
         min_length=1,
         max_length=32000,
     )
 
-    model: str = "sora-2"
+    user_id: Optional[str] = None
 
-    seconds: str = "4"
+    model: Optional[str] = None
 
-    size: str = "1280x720"
+    settings: Dict[str, Any] = Field(
+        default_factory=dict
+    )
 
 
 @router.get("/status")
 def creation_status():
 
-    return video_service.status()
+    return creation_service.status()
 
 
-@router.post("/video")
-def create_video(
-    request: VideoCreateRequest,
+@router.post("/")
+def create_content(
+    request: CreationRequest,
 ):
 
     try:
 
-        return video_service.create_video(
+        return creation_service.create(
+            creation_type=request.creation_type,
             prompt=request.prompt,
+            user_id=request.user_id,
             model=request.model,
-            seconds=request.seconds,
-            size=request.size,
+            settings=request.settings,
+        )
+
+    except ValueError as exc:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
         )
 
     except Exception as exc:
@@ -62,15 +78,27 @@ def create_video(
         )
 
 
-@router.get("/video/{video_id}")
-def get_video(
-    video_id: str,
+@router.post("/{creation_type}")
+def create_content_by_type(
+    creation_type: str,
+    request: CreationRequest,
 ):
 
     try:
 
-        return video_service.get_video(
-            video_id
+        return creation_service.create(
+            creation_type=creation_type,
+            prompt=request.prompt,
+            user_id=request.user_id,
+            model=request.model,
+            settings=request.settings,
+        )
+
+    except ValueError as exc:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
         )
 
     except Exception as exc:
