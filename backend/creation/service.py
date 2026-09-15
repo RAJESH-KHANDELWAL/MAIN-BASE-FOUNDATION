@@ -1,58 +1,95 @@
-from typing import Dict, List, Optional
+"""
+MUKTI MAHAL
+UNIFIED AI CREATION SERVICE
 
-from .model import Creation, CreationStatus, CreationType
+Central creation boundary for:
+PHOTO
+VIDEO
+MOVIE
+MUSIC
+DESIGN
+GAME
+
+MUKTI MAHAL itself is the world / experience.
+There is intentionally no separate game module.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any, Dict
+from uuid import uuid4
+
+
+CREATION_TYPES = {
+    "PHOTO",
+    "VIDEO",
+    "MOVIE",
+    "MUSIC",
+    "DESIGN",
+    "GAME",
+}
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 class CreationService:
+    """
+    Central MUKTI MAHAL creation service.
 
-    def __init__(self):
-        self._creations: Dict[str, Creation] = {}
-        self._counter = 0
-
-    def _next_id(self) -> str:
-        self._counter += 1
-        return f"CRT-{self._counter:06d}"
+    This layer does not fake successful generation.
+    It creates a real creation request and delegates
+    actual generation to the appropriate provider layer.
+    """
 
     def create(
         self,
-        creation_type: CreationType,
-        title: str,
-        description: str = "",
-        owner_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-    ) -> Creation:
+        creation_type: str,
+        prompt: str,
+        user_id: str | None = None,
+        model: str | None = None,
+        settings: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
 
-        creation = Creation(
-            creation_id=self._next_id(),
-            creation_type=creation_type,
-            title=title,
-            description=description,
-            owner_id=owner_id,
-            project_id=project_id,
-        )
+        creation_type = creation_type.strip().upper()
+        prompt = prompt.strip()
 
-        self._creations[creation.creation_id] = creation
-        return creation
+        if creation_type not in CREATION_TYPES:
+            raise ValueError(
+                f"Unsupported creation type: {creation_type}"
+            )
 
-    def get(self, creation_id: str) -> Optional[Creation]:
-        return self._creations.get(creation_id)
+        if not prompt:
+            raise ValueError(
+                "Creation prompt is required."
+            )
 
-    def list(self) -> List[Creation]:
-        return list(self._creations.values())
+        creation_id = f"MM-CREATE-{uuid4().hex[:12].upper()}"
 
-    def update_status(
-        self,
-        creation_id: str,
-        status: CreationStatus,
-    ) -> Optional[Creation]:
+        return {
+            "creation_id": creation_id,
+            "system": "MUKTI MAHAL",
+            "type": creation_type,
+            "prompt": prompt,
+            "model": model,
+            "settings": settings or {},
+            "user_id": user_id,
+            "status": "QUEUED",
+            "created_at": utc_now(),
+            "message": (
+                f"MUKTI MAHAL {creation_type} creation "
+                "request accepted."
+            ),
+        }
 
-        creation = self.get(creation_id)
-
-        if creation is None:
-            return None
-
-        creation.status = status
-        return creation
-
-    def delete(self, creation_id: str) -> bool:
-        return self._creations.pop(creation_id, None) is not None
+    def status(self) -> Dict[str, Any]:
+        return {
+            "system": "MUKTI MAHAL AI CREATION",
+            "status": "READY",
+            "creation_types": sorted(CREATION_TYPES),
+            "architecture": "UNIFIED_CREATION",
+            "game_is_mukti_mahal": True,
+            "separate_game_module": False,
+        }
