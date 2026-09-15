@@ -1,11 +1,6 @@
 import * as THREE from
     "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
 const canvas =
     document.getElementById("mahal-canvas");
 
@@ -29,8 +24,9 @@ const mobileInteract =
 
 
 /* =========================================================
-   THREE.JS SCENE
-========================================================= */
+   MUKTI MAHAL
+   PLAYABLE DIGITAL WORLD
+   ========================================================= */
 
 const scene =
     new THREE.Scene();
@@ -42,13 +38,13 @@ scene.fog =
     new THREE.Fog(
         0x101010,
         80,
-        500
+        550
     );
 
 
 /* =========================================================
    CAMERA
-========================================================= */
+   ========================================================= */
 
 const camera =
     new THREE.PerspectiveCamera(
@@ -62,7 +58,7 @@ const camera =
 
 /* =========================================================
    RENDERER
-========================================================= */
+   ========================================================= */
 
 const renderer =
     new THREE.WebGLRenderer({
@@ -85,7 +81,7 @@ renderer.setSize(
 
 /* =========================================================
    LIGHTING
-========================================================= */
+   ========================================================= */
 
 const ambientLight =
     new THREE.AmbientLight(
@@ -96,7 +92,6 @@ const ambientLight =
 scene.add(
     ambientLight
 );
-
 
 const sunLight =
     new THREE.DirectionalLight(
@@ -116,8 +111,8 @@ scene.add(
 
 
 /* =========================================================
-   WORLD
-========================================================= */
+   WORLD ROOT
+   ========================================================= */
 
 const world =
     new THREE.Group();
@@ -129,7 +124,7 @@ scene.add(
 
 /* =========================================================
    GROUND
-========================================================= */
+   ========================================================= */
 
 const groundGeometry =
     new THREE.PlaneGeometry(
@@ -162,7 +157,7 @@ world.add(
 
 /* =========================================================
    GRID
-========================================================= */
+   ========================================================= */
 
 const grid =
     new THREE.GridHelper(
@@ -181,8 +176,8 @@ world.add(
 
 
 /* =========================================================
-   BUILDINGS
-========================================================= */
+   LOCATIONS
+   ========================================================= */
 
 const locations = [];
 
@@ -246,13 +241,13 @@ function createBuilding({
 
 /* =========================================================
    MUKTI MAHAL LOCATIONS
-========================================================= */
+   ========================================================= */
 
 createBuilding({
     id: "main-gate",
     name: "MUKTI MAHAL MAIN GATE",
     description:
-        "The main entrance into the Mukti Mahal world.",
+        "The main entrance into the Mukti Mahal playable world.",
     x: 0,
     z: -90,
     width: 30,
@@ -278,7 +273,7 @@ createBuilding({
     id: "creator-studio",
     name: "CREATOR STUDIO",
     description:
-        "A creation area for photography, video, design, music and digital media.",
+        "Photography, video, design, music and digital creation space.",
     x: -55,
     z: 0,
     width: 25,
@@ -291,7 +286,7 @@ createBuilding({
     id: "cinema",
     name: "CINEMA",
     description:
-        "The cinematic space of Mukti Mahal.",
+        "The cinematic entertainment space of Mukti Mahal.",
     x: 55,
     z: 0,
     width: 25,
@@ -317,7 +312,7 @@ createBuilding({
     id: "music-room",
     name: "MUSIC ROOM",
     description:
-        "A music and audio creation space.",
+        "Music and audio creation space.",
     x: 55,
     z: 55,
     width: 25,
@@ -328,7 +323,7 @@ createBuilding({
 
 /* =========================================================
    PLAYER
-========================================================= */
+   ========================================================= */
 
 const playerGeometry =
     new THREE.CapsuleGeometry(
@@ -361,13 +356,13 @@ world.add(
 );
 
 
-/* =========================================================
-   PLAYER COLLISION
-========================================================= */
-
 const playerRadius =
     1.2;
 
+
+/* =========================================================
+   COLLISION
+   ========================================================= */
 
 function collidesWithBuilding(
     nextX,
@@ -424,7 +419,7 @@ function collidesWithBuilding(
 
 /* =========================================================
    INPUT
-========================================================= */
+   ========================================================= */
 
 const keys =
     new Set();
@@ -437,20 +432,14 @@ window.addEventListener(
         const key =
             event.key.toLowerCase();
 
-        keys.add(key);
+        keys.add(
+            key
+        );
 
         if (
             key === "e"
         ) {
             interact();
-        }
-
-        if (
-            key === "shift"
-        ) {
-            keys.add(
-                "shift"
-            );
         }
     }
 );
@@ -468,59 +457,66 @@ window.addEventListener(
 
 
 /* =========================================================
-   MOBILE INPUT
-========================================================= */
+   MOBILE CONTROLS
+   ========================================================= */
 
 document
     .querySelectorAll(
         "[data-key]"
     )
-    .forEach(button => {
+    .forEach(
+        button => {
 
-        const key =
-            button.dataset.key;
+            const key =
+                button.dataset.key;
 
-        const start =
-            event => {
+            const start =
+                event => {
 
-                event.preventDefault();
+                    event.preventDefault();
 
-                keys.add(key);
-            };
+                    keys.add(
+                        key
+                    );
+                };
 
-        const stop =
-            event => {
+            const stop =
+                event => {
 
-                event.preventDefault();
+                    event.preventDefault();
 
-                keys.delete(key);
-            };
+                    keys.delete(
+                        key
+                    );
+                };
 
-        button.addEventListener(
-            "pointerdown",
-            start
-        );
+            button.addEventListener(
+                "pointerdown",
+                start
+            );
 
-        button.addEventListener(
-            "pointerup",
-            stop
-        );
+            button.addEventListener(
+                "pointerup",
+                stop
+            );
 
-        button.addEventListener(
-            "pointercancel",
-            stop
-        );
+            button.addEventListener(
+                "pointercancel",
+                stop
+            );
 
-        button.addEventListener(
-            "pointerleave",
-            stop
-        );
-    });
+            button.addEventListener(
+                "pointerleave",
+                stop
+            );
+        }
+    );
 
 
 mobileInteract.addEventListener(
     "click",
     () => {
+
         interact();
     }
 );
@@ -528,7 +524,7 @@ mobileInteract.addEventListener(
 
 /* =========================================================
    PLAYER MOVEMENT
-========================================================= */
+   ========================================================= */
 
 function updatePlayer() {
 
@@ -539,7 +535,6 @@ function updatePlayer() {
         player.position.z;
 
     let dx = 0;
-
     let dz = 0;
 
 
@@ -590,8 +585,11 @@ function updatePlayer() {
         );
 
 
-    dx /= length;
-    dz /= length;
+    dx /=
+        length;
+
+    dz /=
+        length;
 
 
     let speed =
@@ -607,15 +605,16 @@ function updatePlayer() {
 
 
     const nextX =
-        x + dx * speed;
+        x +
+        dx *
+        speed;
+
 
     const nextZ =
-        z + dz * speed;
+        z +
+        dz *
+        speed;
 
-
-    /*
-     * Collision on X axis.
-     */
 
     if (
         !collidesWithBuilding(
@@ -623,13 +622,11 @@ function updatePlayer() {
             z
         )
     ) {
-        x = nextX;
+
+        x =
+            nextX;
     }
 
-
-    /*
-     * Collision on Z axis.
-     */
 
     if (
         !collidesWithBuilding(
@@ -637,7 +634,9 @@ function updatePlayer() {
             nextZ
         )
     ) {
-        z = nextZ;
+
+        z =
+            nextZ;
     }
 
 
@@ -646,46 +645,67 @@ function updatePlayer() {
 
     player.position.z =
         z;
+
+
+    /* Face movement direction */
+
+    if (
+        dx !== 0 ||
+        dz !== 0
+    ) {
+
+        player.rotation.y =
+            Math.atan2(
+                dx,
+                dz
+            );
+    }
 }
 
 
 /* =========================================================
-   CAMERA
-========================================================= */
+   CAMERA FOLLOW
+   ========================================================= */
+
+const cameraTarget =
+    new THREE.Vector3();
+
+
+const cameraDesired =
+    new THREE.Vector3();
+
 
 function updateCamera() {
 
-    const target =
-        new THREE.Vector3(
-            player.position.x,
-            player.position.y + 1.5,
-            player.position.z
-        );
+    cameraTarget.set(
+        player.position.x,
+        player.position.y + 1.5,
+        player.position.z
+    );
 
 
-    const desired =
-        new THREE.Vector3(
-            player.position.x,
-            player.position.y + 9,
-            player.position.z + 14
-        );
+    cameraDesired.set(
+        player.position.x,
+        player.position.y + 9,
+        player.position.z + 14
+    );
 
 
     camera.position.lerp(
-        desired,
+        cameraDesired,
         0.08
     );
 
 
     camera.lookAt(
-        target
+        cameraTarget
     );
 }
 
 
 /* =========================================================
-   INTERACTION
-========================================================= */
+   NEAREST LOCATION
+   ========================================================= */
 
 function getNearestLocation() {
 
@@ -709,6 +729,7 @@ function getNearestLocation() {
             player.position.z -
             location.position.z;
 
+
         const distance =
             Math.sqrt(
                 dx * dx +
@@ -731,11 +752,18 @@ function getNearestLocation() {
 
 
     return {
-        location: nearest,
-        distance: nearestDistance
+        location:
+            nearest,
+
+        distance:
+            nearestDistance
     };
 }
 
+
+/* =========================================================
+   INTERACTION
+   ========================================================= */
 
 function interact() {
 
@@ -781,8 +809,8 @@ interactionClose.addEventListener(
 
 
 /* =========================================================
-   STATUS
-========================================================= */
+   HUD
+   ========================================================= */
 
 function updateStatus() {
 
@@ -809,7 +837,7 @@ function updateStatus() {
 
 /* =========================================================
    RESIZE
-========================================================= */
+   ========================================================= */
 
 window.addEventListener(
     "resize",
@@ -818,6 +846,7 @@ window.addEventListener(
         camera.aspect =
             window.innerWidth /
             window.innerHeight;
+
 
         camera.updateProjectionMatrix();
 
@@ -831,8 +860,8 @@ window.addEventListener(
 
 
 /* =========================================================
-   START
-========================================================= */
+   INITIAL CAMERA
+   ========================================================= */
 
 camera.position.set(
     0,
@@ -847,8 +876,8 @@ camera.lookAt(
 
 
 /* =========================================================
-   MAIN LOOP
-========================================================= */
+   GAME LOOP
+   ========================================================= */
 
 function animate() {
 
@@ -871,164 +900,12 @@ function animate() {
 }
 
 
+/* =========================================================
+   START
+   ========================================================= */
+
 runtimeStatus.textContent =
     "MUKTI MAHAL — PLAYABLE WORLD";
 
 
 animate();
-
-/* =========================================================
-   MUKTI MAHAL INTERACTION RUNTIME
-========================================================= */
-
-const interactionDistance = 20;
-
-let activeInteraction = null;
-
-
-/*
- * Find the nearest interactive Mukti Mahal location.
- */
-function findInteractiveLocation() {
-
-    let nearest = null;
-    let nearestDistance = Infinity;
-
-    for (const location of locations) {
-
-        if (!location.userData.interactive) {
-            continue;
-        }
-
-        const dx =
-            player.position.x -
-            location.position.x;
-
-        const dz =
-            player.position.z -
-            location.position.z;
-
-        const distance =
-            Math.sqrt(
-                dx * dx +
-                dz * dz
-            );
-
-        if (distance < nearestDistance) {
-
-            nearest = location;
-            nearestDistance = distance;
-        }
-    }
-
-    return {
-        location: nearest,
-        distance: nearestDistance
-    };
-}
-
-
-/*
- * Update interaction state.
- */
-function updateInteractionState() {
-
-    const result =
-        findInteractiveLocation();
-
-    if (
-        !result.location ||
-        result.distance > interactionDistance
-    ) {
-
-        activeInteraction = null;
-
-        runtimeStatus.textContent =
-            "MUKTI MAHAL — EXPLORE";
-
-        return;
-    }
-
-
-    activeInteraction =
-        result.location;
-
-
-    runtimeStatus.textContent =
-        `${result.location.userData.name} — PRESS E`;
-}
-
-
-/*
- * Open Mukti Mahal interaction.
- */
-function openMuktiMahalInteraction() {
-
-    if (!activeInteraction) {
-        return;
-    }
-
-
-    const data =
-        activeInteraction.userData;
-
-
-    interactionTitle.textContent =
-        data.name;
-
-
-    interactionDescription.textContent =
-        data.description;
-
-
-    interactionPanel.classList.remove(
-        "hidden"
-    );
-}
-
-
-/*
- * E key interaction.
- */
-window.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key.toLowerCase() === "e"
-        ) {
-
-            openMuktiMahalInteraction();
-        }
-    }
-);
-
-
-/*
- * Mobile interaction.
- */
-if (mobileInteract) {
-
-    mobileInteract.addEventListener(
-        "click",
-        openMuktiMahalInteraction
-    );
-}
-
-
-/*
- * Add interaction state to runtime loop.
- */
-const originalAnimate =
-    animate;
-
-function muktiMahalRuntimeLoop() {
-
-    updateInteractionState();
-
-    requestAnimationFrame(
-        muktiMahalRuntimeLoop
-    );
-}
-
-muktiMahalRuntimeLoop();
