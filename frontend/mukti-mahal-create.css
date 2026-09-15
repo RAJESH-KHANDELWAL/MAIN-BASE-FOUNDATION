@@ -1,0 +1,360 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+
+    background: #080808;
+    color: #ffffff;
+
+    font-family:
+        "Century Schoolbook",
+        "Libre Baskerville",
+        serif;
+}
+
+body {
+    min-height: 100vh;
+}
+
+button,
+textarea,
+select {
+    font-family: inherit;
+}
+
+
+#creation-app {
+    width: 100%;
+    min-height: 100vh;
+}
+
+
+.creation-header {
+    width: 100%;
+
+    padding: 24px 30px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    border-bottom:
+        1px solid rgba(255, 255, 255, 0.12);
+
+    background:
+        rgba(0, 0, 0, 0.92);
+}
+
+
+.brand {
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: 3px;
+}
+
+
+.subtitle {
+    margin-top: 5px;
+
+    font-size: 11px;
+    letter-spacing: 3px;
+
+    opacity: 0.55;
+}
+
+
+.back-button {
+    padding: 10px 15px;
+
+    color: #ffffff;
+    text-decoration: none;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.25);
+
+    border-radius: 7px;
+
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+
+.creation-container {
+    width: min(1100px, 92vw);
+
+    margin: 60px auto;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr);
+
+    gap: 28px;
+}
+
+
+.creation-card,
+.result-card {
+    padding: 30px;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.15);
+
+    border-radius: 14px;
+
+    background:
+        rgba(255, 255, 255, 0.035);
+}
+
+
+.section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+
+    opacity: 0.5;
+}
+
+
+h1,
+h2 {
+    margin: 12px 0 0;
+
+    font-weight: 800;
+}
+
+
+h1 {
+    font-size: 30px;
+}
+
+
+h2 {
+    font-size: 23px;
+}
+
+
+.intro {
+    margin: 15px 0 28px;
+
+    line-height: 1.7;
+
+    font-size: 14px;
+
+    opacity: 0.7;
+}
+
+
+.field-label {
+    display: block;
+
+    margin-bottom: 9px;
+
+    font-size: 10px;
+    letter-spacing: 2px;
+
+    opacity: 0.6;
+}
+
+
+textarea {
+    width: 100%;
+    min-height: 230px;
+
+    resize: vertical;
+
+    padding: 16px;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.18);
+
+    border-radius: 9px;
+
+    outline: none;
+
+    background: #111111;
+    color: #ffffff;
+
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+textarea:focus,
+select:focus {
+    border-color:
+        rgba(255, 255, 255, 0.5);
+}
+
+
+.options {
+    margin-top: 22px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 12px;
+}
+
+
+select {
+    width: 100%;
+
+    padding: 12px;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.18);
+
+    border-radius: 8px;
+
+    background: #111111;
+    color: #ffffff;
+
+    outline: none;
+}
+
+
+#create-video {
+    width: 100%;
+
+    margin-top: 24px;
+
+    padding: 16px;
+
+    border: 0;
+
+    border-radius: 9px;
+
+    background: #ffffff;
+    color: #000000;
+
+    font-size: 13px;
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+
+    cursor: pointer;
+}
+
+
+#create-video:hover {
+    opacity: 0.88;
+}
+
+
+#create-video:disabled {
+    cursor: wait;
+    opacity: 0.45;
+}
+
+
+.creation-status {
+    margin-top: 15px;
+
+    text-align: center;
+
+    font-size: 11px;
+    letter-spacing: 1px;
+
+    opacity: 0.65;
+}
+
+
+.result-progress {
+    margin-top: 18px;
+
+    padding: 13px;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.12);
+
+    border-radius: 8px;
+
+    font-size: 12px;
+}
+
+
+.generated-video {
+    width: 100%;
+
+    margin-top: 20px;
+
+    border-radius: 10px;
+
+    background: #000000;
+}
+
+
+.result-data {
+    margin-top: 18px;
+
+    max-height: 300px;
+
+    overflow: auto;
+
+    padding: 15px;
+
+    border-radius: 8px;
+
+    background: #050505;
+
+    font-family: monospace;
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+}
+
+
+.hidden {
+    display: none !important;
+}
+
+
+@media (max-width: 800px) {
+
+    .creation-header {
+        padding: 18px;
+    }
+
+    .brand {
+        font-size: 19px;
+    }
+
+    .back-button {
+        font-size: 9px;
+        padding: 8px 10px;
+    }
+
+    .creation-container {
+        grid-template-columns: 1fr;
+
+        margin:
+            30px auto;
+    }
+
+    .options {
+        grid-template-columns: 1fr;
+    }
+
+    .creation-card,
+    .result-card {
+        padding: 22px;
+    }
+
+    h1 {
+        font-size: 25px;
+    }
+}
