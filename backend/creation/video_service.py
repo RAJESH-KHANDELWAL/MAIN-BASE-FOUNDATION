@@ -2,33 +2,52 @@
 MUKTI MAHAL
 REAL AI VIDEO CREATION SERVICE
 
-Provider-independent service boundary.
-
 Current provider:
-OpenAI Videos API / Sora
-
-Important:
-The provider can be replaced later without changing
-the Mukti Mahal creation architecture.
+Google Gemini API / Veo 3.1
 """
 
+from __future__ import annotations
+
 import os
+import time
+from pathlib import Path
 from typing import Any, Dict, Optional
 
-from openai import OpenAI
+from google import genai
 
 
 class VideoCreationService:
 
     def __init__(self) -> None:
-        self.api_key = os.getenv("OPENAI_API_KEY")
 
-        self.client: Optional[OpenAI] = None
+        self.api_key = os.getenv(
+            "GEMINI_API_KEY"
+        )
+
+        self.client: Optional[Any] = None
 
         if self.api_key:
-            self.client = OpenAI(
+
+            self.client = genai.Client(
                 api_key=self.api_key
             )
+
+        self.model = os.getenv(
+            "MUKTI_MAHAL_VIDEO_MODEL",
+            "veo-3.1-generate-preview",
+        )
+
+        self.asset_directory = (
+            Path(__file__).resolve().parents[2]
+            / "data"
+            / "mukti_mahal"
+            / "assets"
+        )
+
+        self.asset_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
     def status(self) -> Dict[str, Any]:
 
@@ -39,140 +58,71 @@ class VideoCreationService:
                 if self.client
                 else "CONFIGURATION_REQUIRED"
             ),
-            "provider": "openai",
-            "provider_model": "sora-2",
+            "provider": "google",
+            "provider_model": self.model,
         }
 
     def create_video(
         self,
         prompt: str,
-        model: str = "sora-2",
-        seconds: str = "4",
-        size: str = "1280x720",
     ) -> Dict[str, Any]:
 
         if not self.client:
+
             raise RuntimeError(
-                "OPENAI_API_KEY is not configured."
+                "GEMINI_API_KEY is not configured."
             )
 
-        if not prompt.strip():
+        prompt = prompt.strip()
+
+        if not prompt:
+
             raise ValueError(
                 "Video prompt is required."
             )
 
-        video = self.client.videos.create(
-            model=model,
-            prompt=prompt,
-            seconds=seconds,
-            size=size,
+        operation = (
+            self.client.models.generate_videos(
+                model=self.model,
+                prompt=prompt,
+            )
         )
 
-        return self._serialize(video)
+        while not operation.done:
 
-    def get_video(
-        self,
-        video_id: str,
-    ) -> Dict[str, Any]:
+            time.sleep(10)
 
-        if not self.client:
-            raise RuntimeError(
-                "OPENAI_API_KEY is not configured."
+            operation = (
+                self.client.operations.get(
+                    operation
+                )
             )
 
-        video = self.client.videos.retrieve(
-            video_id
+        generated_video = (
+            operation.response.generated_videos[0]
         )
 
-        return self._serialize(video)
+        asset_id = (
+            f"MM-VID-{os.urandom(6).hex().upper()}"
+        )
 
-    def _serialize(
-        self,
-        video: Any,
-    ) -> Dict[str, Any]:
+        file_path = (
+            self.asset_directory
+            / f"{asset_id}.mp4"
+        )
 
-        return {
-            "id": getattr(
-                video,
-                "id",
-                None,
-            ),
-            "object": getattr(
-                video,
-                "object",
-                "video",
-            ),
-            "model": getattr(
-                video,
-                "model",
-                None,
-            ),
-            "status": getattr(
-                video,
-                "status",
-                None,
-            ),
-            "progress": getattr(
-                video,
-                "progress",
-                0,
-            ),
-            "prompt": getattr(
-                video,
-                "prompt",
-                None,
-            ),
-            "seconds": getattr(
-                video,
-                "seconds",
-                None,
-            ),
-            "size": getattr(
-                video,
-                "size",
-                None,
-            ),
-            "created_at": getattr(
-                video,
-                "created_at",
-                None,
-            ),
-            "completed_at": getattr(
-                video,
-                "completed_at",
-                None,
-            ),
-            "expires_at": getattr(
-                video,
-                "expires_at",
-                None,
-            ),
-            "error": self._serialize_error(
-                getattr(
-                    video,
-                    "error",
-                    None,
-                )
-            ),
-        }
-
-    def _serialize_error(
-        self,
-        error: Any,
-    ) -> Optional[Dict[str, Any]]:
-
-        if error is None:
-            return None
+        self.client.files.download(
+            file=generated_video.video,
+            download_path=str(file_path),
+        )
 
         return {
-            "code": getattr(
-                error,
-                "code",
-                None,
-            ),
-            "message": getattr(
-                error,
-                "message",
-                None,
-            ),
+            "asset_id": asset_id,
+            "type": "VIDEO",
+            "status": "COMPLETED",
+            "provider": "google",
+            "model": self.model,
+            "prompt": prompt,
+            "file": str(file_path),
+            "filename": file_path.name,
         }
