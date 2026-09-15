@@ -876,3 +876,159 @@ runtimeStatus.textContent =
 
 
 animate();
+
+/* =========================================================
+   MUKTI MAHAL INTERACTION RUNTIME
+========================================================= */
+
+const interactionDistance = 20;
+
+let activeInteraction = null;
+
+
+/*
+ * Find the nearest interactive Mukti Mahal location.
+ */
+function findInteractiveLocation() {
+
+    let nearest = null;
+    let nearestDistance = Infinity;
+
+    for (const location of locations) {
+
+        if (!location.userData.interactive) {
+            continue;
+        }
+
+        const dx =
+            player.position.x -
+            location.position.x;
+
+        const dz =
+            player.position.z -
+            location.position.z;
+
+        const distance =
+            Math.sqrt(
+                dx * dx +
+                dz * dz
+            );
+
+        if (distance < nearestDistance) {
+
+            nearest = location;
+            nearestDistance = distance;
+        }
+    }
+
+    return {
+        location: nearest,
+        distance: nearestDistance
+    };
+}
+
+
+/*
+ * Update interaction state.
+ */
+function updateInteractionState() {
+
+    const result =
+        findInteractiveLocation();
+
+    if (
+        !result.location ||
+        result.distance > interactionDistance
+    ) {
+
+        activeInteraction = null;
+
+        runtimeStatus.textContent =
+            "MUKTI MAHAL — EXPLORE";
+
+        return;
+    }
+
+
+    activeInteraction =
+        result.location;
+
+
+    runtimeStatus.textContent =
+        `${result.location.userData.name} — PRESS E`;
+}
+
+
+/*
+ * Open Mukti Mahal interaction.
+ */
+function openMuktiMahalInteraction() {
+
+    if (!activeInteraction) {
+        return;
+    }
+
+
+    const data =
+        activeInteraction.userData;
+
+
+    interactionTitle.textContent =
+        data.name;
+
+
+    interactionDescription.textContent =
+        data.description;
+
+
+    interactionPanel.classList.remove(
+        "hidden"
+    );
+}
+
+
+/*
+ * E key interaction.
+ */
+window.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key.toLowerCase() === "e"
+        ) {
+
+            openMuktiMahalInteraction();
+        }
+    }
+);
+
+
+/*
+ * Mobile interaction.
+ */
+if (mobileInteract) {
+
+    mobileInteract.addEventListener(
+        "click",
+        openMuktiMahalInteraction
+    );
+}
+
+
+/*
+ * Add interaction state to runtime loop.
+ */
+const originalAnimate =
+    animate;
+
+function muktiMahalRuntimeLoop() {
+
+    updateInteractionState();
+
+    requestAnimationFrame(
+        muktiMahalRuntimeLoop
+    );
+}
+
+muktiMahalRuntimeLoop();
