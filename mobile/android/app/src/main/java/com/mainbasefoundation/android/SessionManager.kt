@@ -7,107 +7,188 @@ import java.nio.charset.StandardCharsets
 
 class SessionManager(context: Context) {
 
-```
-private val preferences = context.getSharedPreferences(
-    "main_base_foundation_session",
-    Context.MODE_PRIVATE
-)
+    private val secureStore = SecureSessionStore(context)
 
-companion object {
-    private const val KEY_TOKEN = "access_token"
-    private const val KEY_SESSION_ID = "session_id"
-    private const val KEY_USER_ID = "user_id"
-}
+    companion object {
+        private const val LEGACY_PREFERENCES =
+            "main_base_foundation_session"
+    }
 
-fun saveLoginResponse(responseBody: String): Boolean {
-    return try {
-        val json = JSONObject(responseBody)
+    init {
+        /*
+         * Remove the old plaintext session store.
+         *
+         * Existing sessions from the previous implementation
+         * are intentionally not migrated because their values
+         * were stored outside the secure store.
+         */
+        context.getSharedPreferences(
+            LEGACY_PREFERENCES,
+            Context.MODE_PRIVATE
+        ).edit()
+            .clear()
+            .apply()
+    }
 
-        val token = json.optString("access_token")
-            .ifBlank {
-                json.optString("token")
+    /**
+     * Save authentication response returned by the backend.
+     *
+     * Supported token fields:
+     * - access_token
+     * - token
+     *
+     * Optional fields:
+     * - session_id
+     * - user_id
+     */
+    fun saveLoginResponse(
+        responseBody: String
+    ): Boolean {
+
+        return try {
+
+            val json = JSONObject(responseBody)
+
+            val token = json.optString("access_token")
+                .ifBlank {
+                    json.optString("token")
+                }
+
+            if (token.isBlank()) {
+                return false
             }
 
-        val sessionId = json.optString("session_id")
-        val userId = json.optString("user_id")
+            val sessionId = json
+                .optString("session_id")
+                .ifBlank {
+                    null
+                }
 
-        if (token.isBlank()) {
-            return false
-        }
+            val userId = json
+                .optString("user_id")
+                .ifBlank {
+                    null
+                }
 
-        preferences.edit()
-            .putString(KEY_TOKEN, token)
-            .putString(KEY_SESSION_ID, sessionId)
-            .putString(KEY_USER_ID, userId)
-            .apply()
+            secureStore.saveToken(token)
+            secureStore.saveSessionId(sessionId)
+            secureStore.saveUserId(userId)
 
-        true
+            true
 
-    } catch (_: Exception) {
-        false
-    }
-}
+        } catch (_: Exception) {
 
-fun getToken(): String? {
-    return preferences.getString(KEY_TOKEN, null)
-}
-
-fun getSessionId(): String? {
-    return preferences.getString(KEY_SESSION_ID, null)
-}
-
-fun getUserId(): String? {
-    return preferences.getString(KEY_USER_ID, null)
-}
-
-fun isLoggedIn(): Boolean {
-    return !getToken().isNullOrBlank()
-}
-
-fun clear() {
-    preferences.edit().clear().apply()
-}
-
-/**
- * Basic JWT expiry check.
- *
- * This does NOT replace server-side token validation.
- * The backend remains the authority for authentication.
- */
-fun isTokenLocallyExpired(): Boolean {
-
-    val token = getToken() ?: return true
-
-    return try {
-        val parts = token.split(".")
-
-        if (parts.size != 3) {
-            return false
-        }
-
-        val payload = String(
-            Base64.decode(
-                parts[1],
-                Base64.URL_SAFE or
-                        Base64.NO_WRAP or
-                        Base64.NO_PADDING
-            ),
-            StandardCharsets.UTF_8
-        )
-
-        val json = JSONObject(payload)
-        val expiry = json.optLong("exp", 0L)
-
-        if (expiry <= 0L) {
             false
-        } else {
-            System.currentTimeMillis() / 1000L >= expiry
+        }
+    }
+
+    /**
+     * Return the currently stored access token.
+     */
+    fun getToken(): String? {
+        return secureStore.getToken()
+    }
+
+    /**
+     * Return the backend session ID.
+     */
+    fun getSessionId(): String? {
+        return secureStore.getSessionId()
+    }
+
+    /**
+     * Return the authenticated user ID.
+     */
+    fun getUserId(): String? {
+        return secureStore.getUserId()
+    }
+
+    /**
+     * Check whether a token is currently stored.
+     */
+    fun isLoggedIn(): Boolean {
+        return secureStore.isLoggedIn()
+    }
+
+    /**
+     * Clear the complete local authentication session.
+     */
+    fun clear() {
+        secureStore.clear()
+    }
+
+    /**
+     * Basic local JWT expiry check.
+     *
+     * This is only a local convenience check.
+     * Server-side token validation remains authoritative.
+     */
+    fun isTokenLocallyExpired(): Boolean {
+
+        val token = getToken() ?: return true
+
+        return try {
+
+            val parts = token.split(".")
+
+            /*
+             * A JWT normally contains:
+             * header.payload.signature
+             */
+            if (parts.size != 3) {
+                return false
+            }
+
+            val payload = String(
+                Base64.decode(
+                    parts[1],
+                    Base64.URL_SAFE or
+                            Base64.NO_WRAP or
+                            Base64.NO_PADDING
+                ),
+                StandardCharsets.UTF_8
+            )
+
+            val json = JSONObject(payload)
+
+            val expiry = json.optLong(
+                "exp",
+                0L
+            )
+
+            /*
+             * If the token does not contain an exp claim,
+             * do not locally reject it.
+             *
+             * The backend remains responsible for validation.
+             */
+            if (expiry <= 0L) {
+                false
+            } else {
+                System.currentTimeMillis() / 1000L >= expiry
+            }
+
+        } catch (_: Exception) {
+
+            /*
+             * Parsing failure does not automatically mean
+             * the server considers the token invalid.
+             */
+            false
+        }
+    }
+
+    /**
+     * Clear the session when the token is known to be invalid
+     * or expired.
+     */
+    fun clearIfLocallyExpired(): Boolean {
+
+        if (isTokenLocallyExpired()) {
+            clear()
+            return true
         }
 
-    } catch (_: Exception) {
-        false
+        return false
     }
-}
-```
-
 }
