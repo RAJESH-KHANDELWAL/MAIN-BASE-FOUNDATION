@@ -2,29 +2,26 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-```
-<!-- Internet is required for communication with the MAIN-BASE-FOUNDATION API -->
-<uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
-<application
-    android:allowBackup="false"
-    android:label="MAIN BASE FOUNDATION"
-    android:supportsRtl="true"
-    android:usesCleartextTraffic="false"
-    android:theme="@style/Theme.MainBaseFoundation">
+    <application
+        android:allowBackup="false"
+        android:label="MAIN BASE FOUNDATION"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
+        android:theme="@style/Theme.MainBaseFoundation">
 
-    <activity
-        android:name=".MainActivity"
-        android:exported="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
 
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
 
-    </activity>
+        </activity>
 
-</application>
-```
+    </application>
 
 </manifest>
