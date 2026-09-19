@@ -1,4 +1,4 @@
-```python
+
 """
 MAIN BASE FOUNDATION
 
@@ -264,4 +264,3 @@ class IntegrationController:
 __all__ = [
     "IntegrationController",
 ]
-```
