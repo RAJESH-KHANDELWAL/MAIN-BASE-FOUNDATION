@@ -1,4 +1,4 @@
-```python
+
 """
 MAIN BASE FOUNDATION
 
@@ -699,4 +699,3 @@ __all__ = [
     "EcosystemEntity",
     "EcosystemService",
 ]
-```
