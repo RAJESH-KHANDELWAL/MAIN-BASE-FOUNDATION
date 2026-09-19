@@ -17,14 +17,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
-    /*
-     * IMPORTANT:
-     * Replace this URL with the HTTPS URL where the
-     * MAIN-BASE-FOUNDATION frontend/API gateway is deployed.
-     *
-     * Example:
-     * https://your-production-domain.com
-     */
     private val appUrl = "https://YOUR-PRODUCTION-DOMAIN.com"
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -100,7 +92,6 @@ class MainActivity : AppCompatActivity() {
         webView.apply {
             stopLoading()
             webChromeClient = null
-            webViewClient = null
             destroy()
         }
 
