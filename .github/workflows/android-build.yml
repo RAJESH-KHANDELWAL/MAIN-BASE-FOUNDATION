@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Build Android Release
     runs-on: ubuntu-latest
 
     steps:
@@ -19,30 +20,72 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
-      - name: Accept Android SDK licenses
+      - name: Prepare Android SDK
         shell: bash
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          set -e
 
-      - name: Install Android SDK 36
-        shell: bash
-        run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+          echo "Android SDK: $ANDROID_HOME"
+          echo "SDK Manager: $SDKMANAGER"
+
+          "$SDKMANAGER" --version
+
+          "$SDKMANAGER" --install \
+            "platform-tools" \
             "platforms;android-36" \
             "build-tools;36.0.0"
+
+      - name: Verify Android SDK
+        shell: bash
+        run: |
+          set -e
+
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -d "$ANDROID_HOME/build-tools/36.0.0"
+
+          echo "Android SDK 36 is ready."
+          echo "Build Tools 36.0.0 is ready."
 
       - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.4.0'
 
+      - name: Check Gradle
+        working-directory: mobile/android
+        shell: bash
+        run: |
+          gradle --version
+
       - name: Build Release AAB
         working-directory: mobile/android
-        run: gradle :app:bundleRelease
+        shell: bash
+        run: |
+          set -e
 
-      - name: Upload AAB
+          gradle :app:bundleRelease \
+            --stacktrace \
+            --no-daemon
+
+      - name: Verify AAB
+        shell: bash
+        run: |
+          set -e
+
+          AAB="mobile/android/app/build/outputs/bundle/release/app-release.aab"
+
+          test -f "$AAB"
+
+          echo "Release AAB successfully created:"
+          ls -lh "$AAB"
+
+      - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: main-base-foundation-release
+          name: main-base-foundation-release-aab
           path: mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
