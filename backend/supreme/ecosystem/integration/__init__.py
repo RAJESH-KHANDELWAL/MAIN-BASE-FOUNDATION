@@ -1,4 +1,4 @@
-```python id="m4wq8s"
+
 """
 MAIN BASE FOUNDATION
 
@@ -83,4 +83,3 @@ __all__ = [
     # Controller
     "IntegrationController",
 ]
-```
