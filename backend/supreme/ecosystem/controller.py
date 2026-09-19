@@ -1,4 +1,4 @@
-```python
+
 """
 MAIN BASE FOUNDATION
 
@@ -418,4 +418,3 @@ class EcosystemController:
 __all__ = [
     "EcosystemController",
 ]
-```
