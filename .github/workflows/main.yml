@@ -191,3 +191,70 @@ jobs:
           print("BUSINESS FLOW TEST PASSED")
           print("=" * 60)
           PY
+
+
+      - name: Run business API integration test
+        run: |
+          python - <<'PY'
+          from backend.api.businesses import (
+              BusinessCreateRequest,
+              BusinessStatusRequest,
+              controller,
+              create_business,
+              get_business,
+              get_businesses,
+              update_business_status,
+              verify_business,
+              delete_business,
+          )
+
+          print("=" * 60)
+          print("MAIN BASE FOUNDATION BUSINESS API TEST")
+          print("=" * 60)
+
+          controller.service.businesses.clear()
+
+          created = create_business(
+              BusinessCreateRequest(
+                  owner_id="OWNER-001",
+                  name="API TEST BUSINESS",
+                  category="DIGITAL SERVICES",
+                  location="JAIPUR",
+                  website="https://example.com",
+                  public_contact="api-test@example.com",
+                  source="PUBLIC_BUSINESS_DATA",
+              )
+          )
+
+          business_id = created["data"]["business_id"]
+
+          assert business_id == "BUS-000001"
+          assert created["data"]["name"] == "API TEST BUSINESS"
+
+          fetched = get_business(business_id)
+          assert fetched["data"]["business_id"] == business_id
+
+          listing = get_businesses()
+          assert listing["count"] == 1
+
+          verified = verify_business(business_id)
+          assert verified["data"]["verified"] is True
+
+          updated = update_business_status(
+              business_id,
+              BusinessStatusRequest(status="ACTIVE"),
+          )
+
+          assert updated["data"]["status"] == "ACTIVE"
+
+          deleted = delete_business(business_id)
+          assert deleted["deleted"] is True
+
+          missing = get_business(business_id)
+          assert missing["data"] is None
+
+          print("BUSINESS API: PASS")
+          print("=" * 60)
+          print("BUSINESS API TEST PASSED")
+          print("=" * 60)
+          PY
