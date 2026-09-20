@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from uuid import uuid4
+import json
 
 from backend.database.service import DatabaseService
 from backend.engines.base import BaseEngine
@@ -13,8 +14,19 @@ class StorageEngine(BaseEngine):
     CENTRAL AI STORAGE ENGINE
 
     MAIN-BASE-FOUNDATION ka central storage registry.
+
     Mukti Mahal, Business, Company, Project, Android,
     Web aur future modules isi central engine ko use kar sakte hain.
+
+    Security model:
+
+        AUTHENTICATED ACTOR
+                ↓
+        AI STORAGE ENGINE
+                ↓
+        OWNER / ACCESS CONTROL
+                ↓
+        AUDIT
     """
 
     ACTIONS = (
@@ -51,15 +63,64 @@ class StorageEngine(BaseEngine):
 
         self.initialize()
 
-    # ---------------------------------------------------------
+    # =========================================================
     # CORE
-    # ---------------------------------------------------------
+    # =========================================================
 
     @staticmethod
     def _now() -> str:
         return datetime.now(timezone.utc).isoformat()
 
+    @staticmethod
+    def _normalise_actor(actor_id: str) -> str:
+        actor = str(actor_id or "").strip()
+
+        if not actor:
+            raise PermissionError(
+                "Authenticated actor is required."
+            )
+
+        return actor
+
+    @staticmethod
+    def _normalise_content_class(
+        content_class: Optional[str],
+    ) -> Optional[str]:
+
+        if content_class is None:
+            return None
+
+        value = str(content_class).strip().upper()
+
+        if not value:
+            return None
+
+        if value not in StorageEngine.CONTENT_CLASSES:
+            raise ValueError(
+                f"Unsupported content class: {value}"
+            )
+
+        return value
+
+    @staticmethod
+    def _metadata_to_string(
+        metadata: Any,
+    ) -> str:
+
+        if metadata is None:
+            return ""
+
+        if isinstance(metadata, str):
+            return metadata
+
+        return json.dumps(
+            metadata,
+            ensure_ascii=False,
+            default=str,
+        )
+
     def initialize(self) -> None:
+
         self.database.initialize()
 
         self.database.execute(
@@ -132,9 +193,9 @@ class StorageEngine(BaseEngine):
             """
         )
 
-    # ---------------------------------------------------------
+    # =========================================================
     # AI CLASSIFICATION
-    # ---------------------------------------------------------
+    # =========================================================
 
     @staticmethod
     def classify(
@@ -143,11 +204,12 @@ class StorageEngine(BaseEngine):
         content_class: Optional[str] = None,
     ) -> str:
 
-        if content_class:
-            value = content_class.upper()
+        supplied = StorageEngine._normalise_content_class(
+            content_class
+        )
 
-            if value in StorageEngine.CONTENT_CLASSES:
-                return value
+        if supplied:
+            return supplied
 
         mime = (mime_type or "").lower()
         name = (title or "").lower()
@@ -179,9 +241,9 @@ class StorageEngine(BaseEngine):
 
         return "GENERAL"
 
-    # ---------------------------------------------------------
+    # =========================================================
     # REGISTER ASSET
-    # ---------------------------------------------------------
+    # =========================================================
 
     def register_asset(
         self,
@@ -194,8 +256,20 @@ class StorageEngine(BaseEngine):
         storage_key: Optional[str] = None,
         file_url: Optional[str] = None,
         content_class: Optional[str] = None,
-        metadata: str = "",
+        metadata: Any = None,
     ) -> Dict[str, Any]:
+
+        owner_id = self._normalise_actor(owner_id)
+
+        if not area_id:
+            raise ValueError(
+                "Storage area is required."
+            )
+
+        if not title:
+            raise ValueError(
+                "Asset title is required."
+            )
 
         asset_id = f"AST-{uuid4().hex.upper()}"
 
@@ -205,6 +279,10 @@ class StorageEngine(BaseEngine):
             mime_type,
             title,
             content_class,
+        )
+
+        metadata_text = self._metadata_to_string(
+            metadata
         )
 
         self.database.execute(
@@ -239,7 +317,7 @@ class StorageEngine(BaseEngine):
                 mime_type,
                 storage_key,
                 file_url,
-                metadata,
+                metadata_text,
                 now,
                 now,
             ),
@@ -270,16 +348,18 @@ class StorageEngine(BaseEngine):
 
         return self.get_asset(asset_id)
 
-    # ---------------------------------------------------------
+    # =========================================================
     # GET ASSET
-    # ---------------------------------------------------------
+    # =========================================================
 
     def get_asset(
         self,
         asset_id: str,
+        actor_id: Optional[str] = None,
+        action: str = "VIEW",
     ) -> Optional[Dict[str, Any]]:
 
-        row = self.database.fetchone(
+        asset = self.database.fetchone(
             """
             SELECT *
             FROM ai_store_assets
@@ -289,11 +369,36 @@ class StorageEngine(BaseEngine):
             (asset_id,),
         )
 
-        return dict(row) if row else None
+        if not asset:
+            return None
 
-    # ---------------------------------------------------------
+        result = dict(asset)
+
+        if actor_id is not None:
+            actor_id = self._normalise_actor(actor_id)
+
+            if not self.can_access(
+                asset_id,
+                actor_id,
+                action,
+            ):
+                raise PermissionError(
+                    f"{action.upper()} permission denied."
+                )
+
+            self._audit(
+                asset_id=asset_id,
+                actor_id=actor_id,
+                action=action.upper(),
+                source_area=result.get("area_id"),
+                target_area=None,
+            )
+
+        return result
+
+    # =========================================================
     # ACCESS CONTROL
-    # ---------------------------------------------------------
+    # =========================================================
 
     def grant_access(
         self,
@@ -303,12 +408,40 @@ class StorageEngine(BaseEngine):
         granted_by: str,
     ) -> Dict[str, Any]:
 
+        principal_id = self._normalise_actor(
+            principal_id
+        )
+
+        granted_by = self._normalise_actor(
+            granted_by
+        )
+
         action = action.upper()
 
         if action not in self.ACTIONS:
             raise ValueError(
                 f"Unsupported storage action: {action}"
             )
+
+        asset = self.get_asset(asset_id)
+
+        if not asset:
+            raise ValueError(
+                "Asset not found."
+            )
+
+        # Only owner or already authorised SHARE actor
+        # may grant access.
+        if asset["owner_id"] != granted_by:
+
+            if not self.can_access(
+                asset_id,
+                granted_by,
+                "SHARE",
+            ):
+                raise PermissionError(
+                    "SHARE permission denied."
+                )
 
         now = self._now()
 
@@ -357,11 +490,20 @@ class StorageEngine(BaseEngine):
             ),
         )
 
+        self._audit(
+            asset_id=asset_id,
+            actor_id=granted_by,
+            action="GRANT_" + action,
+            source_area=None,
+            target_area=None,
+        )
+
         return {
             "asset_id": asset_id,
             "principal_id": principal_id,
             "action": action,
             "allowed": True,
+            "granted_by": granted_by,
         }
 
     def revoke_access(
@@ -369,9 +511,34 @@ class StorageEngine(BaseEngine):
         asset_id: str,
         principal_id: str,
         action: str,
+        actor_id: Optional[str] = None,
     ) -> bool:
 
         action = action.upper()
+
+        asset = self.get_asset(asset_id)
+
+        if not asset:
+            raise ValueError(
+                "Asset not found."
+            )
+
+        if actor_id is not None:
+
+            actor_id = self._normalise_actor(
+                actor_id
+            )
+
+            if asset["owner_id"] != actor_id:
+
+                if not self.can_access(
+                    asset_id,
+                    actor_id,
+                    "SHARE",
+                ):
+                    raise PermissionError(
+                        "SHARE permission denied."
+                    )
 
         self.database.execute(
             """
@@ -399,15 +566,22 @@ class StorageEngine(BaseEngine):
         action: str,
     ) -> bool:
 
+        principal_id = self._normalise_actor(
+            principal_id
+        )
+
         asset = self.get_asset(asset_id)
 
         if not asset:
             return False
 
-        if asset["deleted"]:
+        if int(asset["deleted"]) == 1:
             return False
 
         action = action.upper()
+
+        if action not in self.ACTIONS:
+            return False
 
         # OWNER ALWAYS HAS CONTROL
         if asset["owner_id"] == principal_id:
@@ -434,9 +608,9 @@ class StorageEngine(BaseEngine):
             and int(row["allowed"]) == 1
         )
 
-    # ---------------------------------------------------------
+    # =========================================================
     # CENTRAL LINKS
-    # ---------------------------------------------------------
+    # =========================================================
 
     def link_asset(
         self,
@@ -444,6 +618,28 @@ class StorageEngine(BaseEngine):
         area_id: str,
         actor_id: str,
     ) -> None:
+
+        actor_id = self._normalise_actor(
+            actor_id
+        )
+
+        asset = self.get_asset(asset_id)
+
+        if not asset:
+            raise ValueError(
+                "Asset not found."
+            )
+
+        if asset["owner_id"] != actor_id:
+
+            if not self.can_access(
+                asset_id,
+                actor_id,
+                "SHARE",
+            ):
+                raise PermissionError(
+                    "SHARE permission denied."
+                )
 
         self.database.execute(
             """
@@ -463,9 +659,9 @@ class StorageEngine(BaseEngine):
             ),
         )
 
-    # ---------------------------------------------------------
+    # =========================================================
     # MOVE
-    # ---------------------------------------------------------
+    # =========================================================
 
     def move_asset(
         self,
@@ -473,6 +669,10 @@ class StorageEngine(BaseEngine):
         target_area: str,
         actor_id: str,
     ) -> Dict[str, Any]:
+
+        actor_id = self._normalise_actor(
+            actor_id
+        )
 
         if not self.can_access(
             asset_id,
@@ -490,7 +690,7 @@ class StorageEngine(BaseEngine):
                 "Asset not found."
             )
 
-        if asset["locked"]:
+        if int(asset["locked"]) == 1:
             raise PermissionError(
                 "Asset is locked."
             )
@@ -512,24 +712,24 @@ class StorageEngine(BaseEngine):
         )
 
         self.link_asset(
-            asset_id,
-            target_area,
-            actor_id,
+            asset_id=asset_id,
+            area_id=target_area,
+            actor_id=actor_id,
         )
 
         self._audit(
-            asset_id,
-            actor_id,
-            "MOVE",
-            source_area,
-            target_area,
+            asset_id=asset_id,
+            actor_id=actor_id,
+            action="MOVE",
+            source_area=source_area,
+            target_area=target_area,
         )
 
         return self.get_asset(asset_id)
 
-    # ---------------------------------------------------------
+    # =========================================================
     # LOCK
-    # ---------------------------------------------------------
+    # =========================================================
 
     def set_lock(
         self,
@@ -537,6 +737,10 @@ class StorageEngine(BaseEngine):
         locked: bool,
         actor_id: str,
     ) -> Dict[str, Any]:
+
+        actor_id = self._normalise_actor(
+            actor_id
+        )
 
         if not self.can_access(
             asset_id,
@@ -562,24 +766,28 @@ class StorageEngine(BaseEngine):
         )
 
         self._audit(
-            asset_id,
-            actor_id,
-            "LOCK" if locked else "UNLOCK",
-            None,
-            None,
+            asset_id=asset_id,
+            actor_id=actor_id,
+            action="LOCK" if locked else "UNLOCK",
+            source_area=None,
+            target_area=None,
         )
 
         return self.get_asset(asset_id)
 
-    # ---------------------------------------------------------
-    # DELETE / RESTORE
-    # ---------------------------------------------------------
+    # =========================================================
+    # DELETE
+    # =========================================================
 
     def delete_asset(
         self,
         asset_id: str,
         actor_id: str,
     ) -> Dict[str, Any]:
+
+        actor_id = self._normalise_actor(
+            actor_id
+        )
 
         if not self.can_access(
             asset_id,
@@ -588,6 +796,18 @@ class StorageEngine(BaseEngine):
         ):
             raise PermissionError(
                 "DELETE permission denied."
+            )
+
+        asset = self.get_asset(asset_id)
+
+        if not asset:
+            raise ValueError(
+                "Asset not found."
+            )
+
+        if int(asset["locked"]) == 1:
+            raise PermissionError(
+                "Asset is locked."
             )
 
         self.database.execute(
@@ -604,20 +824,28 @@ class StorageEngine(BaseEngine):
         )
 
         self._audit(
-            asset_id,
-            actor_id,
-            "DELETE",
-            None,
-            None,
+            asset_id=asset_id,
+            actor_id=actor_id,
+            action="DELETE",
+            source_area=asset["area_id"],
+            target_area=None,
         )
 
         return self.get_asset(asset_id)
+
+    # =========================================================
+    # RESTORE
+    # =========================================================
 
     def restore_asset(
         self,
         asset_id: str,
         actor_id: str,
     ) -> Dict[str, Any]:
+
+        actor_id = self._normalise_actor(
+            actor_id
+        )
 
         asset = self.get_asset(asset_id)
 
@@ -627,6 +855,7 @@ class StorageEngine(BaseEngine):
             )
 
         if asset["owner_id"] != actor_id:
+
             if not self.can_access(
                 asset_id,
                 actor_id,
@@ -650,18 +879,18 @@ class StorageEngine(BaseEngine):
         )
 
         self._audit(
-            asset_id,
-            actor_id,
-            "RESTORE",
-            None,
-            None,
+            asset_id=asset_id,
+            actor_id=actor_id,
+            action="RESTORE",
+            source_area=asset["area_id"],
+            target_area=None,
         )
 
         return self.get_asset(asset_id)
 
-    # ---------------------------------------------------------
+    # =========================================================
     # AUDIT
-    # ---------------------------------------------------------
+    # =========================================================
 
     def _audit(
         self,
@@ -694,9 +923,9 @@ class StorageEngine(BaseEngine):
             ),
         )
 
-    # ---------------------------------------------------------
+    # =========================================================
     # STATUS
-    # ---------------------------------------------------------
+    # =========================================================
 
     def status(self) -> Dict[str, object]:
 
@@ -764,4 +993,11 @@ class StorageEngine(BaseEngine):
             "audit_logging": True,
             "soft_delete": True,
             "asset_linking": True,
+            "authenticated_actor_required": True,
+            "owner_control": True,
+            "restricted_content_classes": [
+                "ADULT_RESTRICTED",
+                "PRIVATE_RESTRICTED",
+                "CONFIDENTIAL",
+            ],
         }
