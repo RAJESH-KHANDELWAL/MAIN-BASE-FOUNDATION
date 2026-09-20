@@ -6,6 +6,7 @@ from backend.engines.security.manager import SecurityEngine
 from backend.engines.api.manager import APIEngine
 from backend.engines.ai.manager import AIEngine
 from backend.engines.foundation.manager import FoundationEngine
+from backend.engines.work_business import WorkBusinessEngine
 
 
 class Bootstrap:
@@ -45,6 +46,11 @@ class Bootstrap:
             FoundationEngine()
         )
 
+        self.engine_manager.register_engine(
+            "work_business",
+            WorkBusinessEngine()
+        )
+
     def boot(self):
 
         self.register_engines()
@@ -65,11 +71,13 @@ class Bootstrap:
                 "Storage",
                 "Security",
                 "API",
+                "AI",
+                "Foundation",
+                "Work Business",
                 "Users",
                 "Organizations",
                 "Roles",
                 "Permissions",
-                "Foundation",
                 "File Manager",
                 "Registry",
                 "Synchronization",
