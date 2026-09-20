@@ -455,6 +455,46 @@ def storage_disconnect():
     return storage_api.disconnect()
 
 # =========================================================
+# CENTRAL AI STORE AUTHORIZATION BRIDGE
+# =========================================================
+
+def _require_ai_store_actor(
+    authorization: Optional[str],
+) -> str:
+    """
+    Resolve the authenticated actor from the authorization header.
+
+    Current auth API already exposes token validation through
+    POST /auth/validate. This bridge keeps AI Store endpoints
+    ready for authenticated actor enforcement.
+    """
+
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="AUTHORIZATION_REQUIRED",
+        )
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="INVALID_AUTHORIZATION_HEADER",
+        )
+
+    token = authorization.replace("Bearer ", "", 1).strip()
+
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="EMPTY_AUTH_TOKEN",
+        )
+
+    # Temporary authenticated principal extraction.
+    # This MUST be replaced by the project's canonical
+    # auth-session/token validation result before production.
+    return token
+
+# =========================================================
 # CENTRAL AI STORE
 # =========================================================
 
