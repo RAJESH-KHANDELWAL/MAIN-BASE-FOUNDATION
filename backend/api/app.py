@@ -450,6 +450,141 @@ def storage_disconnect():
 
     return storage_api.disconnect()
 
+# =========================================================
+# CENTRAL AI STORE
+# =========================================================
+
+from pydantic import BaseModel
+from typing import Optional
+
+
+class AIStoreAssetRequest(BaseModel):
+    owner_id: str
+    area_id: str
+    title: str
+    asset_type: str = "FILE"
+    workspace_id: Optional[str] = None
+    mime_type: Optional[str] = None
+    storage_key: Optional[str] = None
+    file_url: Optional[str] = None
+    content_class: Optional[str] = None
+    metadata: str = ""
+
+
+class AIStoreAccessRequest(BaseModel):
+    principal_id: str
+    action: str
+    granted_by: str
+
+
+class AIStoreMoveRequest(BaseModel):
+    target_area: str
+    actor_id: str
+
+
+class AIStoreLockRequest(BaseModel):
+    locked: bool
+    actor_id: str
+
+
+class AIStoreActorRequest(BaseModel):
+    actor_id: str
+
+
+@app.post("/storage/assets")
+def create_ai_store_asset(
+    request: AIStoreAssetRequest,
+):
+    return storage_api.register_asset(
+        owner_id=request.owner_id,
+        area_id=request.area_id,
+        title=request.title,
+        asset_type=request.asset_type,
+        workspace_id=request.workspace_id,
+        mime_type=request.mime_type,
+        storage_key=request.storage_key,
+        file_url=request.file_url,
+        content_class=request.content_class,
+        metadata=request.metadata,
+    )
+
+
+@app.get("/storage/assets/{asset_id}")
+def get_ai_store_asset(
+    asset_id: str,
+):
+    asset = storage_api.get_asset(asset_id)
+
+    if not asset:
+        return {
+            "success": False,
+            "error": "ASSET_NOT_FOUND",
+        }
+
+    return {
+        "success": True,
+        "asset": asset,
+    }
+
+
+@app.post("/storage/assets/{asset_id}/access")
+def grant_ai_store_access(
+    asset_id: str,
+    request: AIStoreAccessRequest,
+):
+    return storage_api.grant_access(
+        asset_id=asset_id,
+        principal_id=request.principal_id,
+        action=request.action,
+        granted_by=request.granted_by,
+    )
+
+
+@app.post("/storage/assets/{asset_id}/move")
+def move_ai_store_asset(
+    asset_id: str,
+    request: AIStoreMoveRequest,
+):
+    return storage_api.move_asset(
+        asset_id=asset_id,
+        target_area=request.target_area,
+        actor_id=request.actor_id,
+    )
+
+
+@app.post("/storage/assets/{asset_id}/lock")
+def lock_ai_store_asset(
+    asset_id: str,
+    request: AIStoreLockRequest,
+):
+    return storage_api.set_lock(
+        asset_id=asset_id,
+        locked=request.locked,
+        actor_id=request.actor_id,
+    )
+
+
+@app.delete("/storage/assets/{asset_id}")
+def delete_ai_store_asset(
+    asset_id: str,
+    request: AIStoreActorRequest,
+):
+    return storage_api.delete_asset(
+        asset_id=asset_id,
+        actor_id=request.actor_id,
+    )
+
+
+@app.post("/storage/assets/{asset_id}/restore")
+def restore_ai_store_asset(
+    asset_id: str,
+    request: AIStoreActorRequest,
+):
+    return storage_api.restore_asset(
+        asset_id=asset_id,
+        actor_id=request.actor_id,
+    )
+
 
 # ==========================
 # HOME
