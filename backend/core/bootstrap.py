@@ -8,6 +8,7 @@ from backend.engines.ai.manager import AIEngine
 from backend.engines.foundation.manager import FoundationEngine
 from backend.engines.work_business import WorkBusinessEngine
 from backend.engines.leads_business import LeadsBusinessEngine
+from backend.engines.sales_business import SalesBusinessEngine
 
 
 class Bootstrap:
@@ -55,6 +56,11 @@ class Bootstrap:
             LeadsBusinessEngine()
         )
 
+        self.engine_manager.register_engine(
+            "sales_business",
+            SalesBusinessEngine()
+        )
+
     def boot(self):
         self.register_engines()
 
@@ -81,6 +87,7 @@ class Bootstrap:
                 "Foundation",
 
                 "Leads Business",
+                "Sales Business",
                 "Work Business",
 
                 "Users",
