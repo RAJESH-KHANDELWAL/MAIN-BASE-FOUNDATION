@@ -1,3 +1,25 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from fastapi import (
+    FastAPI,
+    HTTPException,
+)
+
+from backend.auth.service import AuthenticationService
+from backend.api.gallary_woult import router as gallary_woult_router
+
+
+app = FastAPI(
+    title="MAIN-BASE-FOUNDATION",
+    version="1.0.0",
+)
+
+
+authentication_service = AuthenticationService()
+
+
 def _require_ai_store_actor(
     authorization: Optional[str]
 ) -> str:
@@ -51,3 +73,34 @@ def _require_ai_store_actor(
         )
 
     return username
+
+
+# ============================================================
+# GALLARY WOULT
+# ============================================================
+
+app.include_router(
+    gallary_woult_router
+)
+
+
+# ============================================================
+# ROOT
+# ============================================================
+
+@app.get("/")
+def root():
+    return {
+        "system": "MAIN-BASE-FOUNDATION",
+        "status": "RUNNING",
+        "gallary_woult": "CONNECTED",
+        "ai_store": "CENTRAL",
+    }
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy",
+        "system": "MAIN-BASE-FOUNDATION",
+    }
