@@ -47,9 +47,7 @@ jobs:
           print("MAIN BASE FOUNDATION BUSINESS FLOW TEST")
           print("=" * 60)
 
-          # --------------------------------------------------
           # 1. LEADS ENGINE
-          # --------------------------------------------------
 
           leads = LeadsBusinessEngine()
 
@@ -72,9 +70,7 @@ jobs:
 
           print("LEADS ENGINE: PASS")
 
-          # --------------------------------------------------
           # 2. SALES ENGINE
-          # --------------------------------------------------
 
           sales = SalesBusinessEngine()
 
@@ -91,6 +87,7 @@ jobs:
           sales.qualify("OPP-001")
           sales.create_proposal("OPP-001")
           sales.start_negotiation("OPP-001")
+
           sales.mark_won(
               "OPP-001",
               customer_id="CUSTOMER-001",
@@ -103,9 +100,7 @@ jobs:
 
           print("SALES ENGINE: PASS")
 
-          # --------------------------------------------------
           # 3. CUSTOMER ENGINE
-          # --------------------------------------------------
 
           customers = CustomerBusinessEngine()
 
@@ -122,9 +117,7 @@ jobs:
 
           print("CUSTOMER ENGINE: PASS")
 
-          # --------------------------------------------------
           # 4. WORK ENGINE
-          # --------------------------------------------------
 
           work_engine = WorkBusinessEngine(
               platform_fee_rate=0.10
@@ -159,9 +152,7 @@ jobs:
 
           print("WORK ENGINE: PASS")
 
-          # --------------------------------------------------
           # 5. PAYMENT + PLATFORM COMMISSION
-          # --------------------------------------------------
 
           payment = work_engine.create_payment(
               payment_id="PAYMENT-001",
@@ -183,15 +174,10 @@ jobs:
 
           print("PAYMENT + COMMISSION: PASS")
 
-          # --------------------------------------------------
-          # FINAL
-          # --------------------------------------------------
-
           print("=" * 60)
           print("BUSINESS FLOW TEST PASSED")
           print("=" * 60)
           PY
-
 
       - name: Run business API integration test
         run: |
@@ -232,12 +218,15 @@ jobs:
           assert created["data"]["name"] == "API TEST BUSINESS"
 
           fetched = get_business(business_id)
+
           assert fetched["data"]["business_id"] == business_id
 
           listing = get_businesses()
+
           assert listing["count"] == 1
 
           verified = verify_business(business_id)
+
           assert verified["data"]["verified"] is True
 
           updated = update_business_status(
@@ -248,9 +237,11 @@ jobs:
           assert updated["data"]["status"] == "ACTIVE"
 
           deleted = delete_business(business_id)
+
           assert deleted["deleted"] is True
 
           missing = get_business(business_id)
+
           assert missing["data"] is None
 
           print("BUSINESS API: PASS")
