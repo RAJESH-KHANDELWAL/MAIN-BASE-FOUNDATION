@@ -22,3 +22,172 @@ jobs:
       - name: Run MAIN BASE FOUNDATION boot test
         run: |
           python -m backend.main
+
+      - name: Run business engine integration test
+        run: |
+          python - <<'PY'
+          from backend.engines.leads_business import (
+              LeadsBusinessEngine,
+              LeadStatus,
+          )
+          from backend.engines.sales_business import (
+              SalesBusinessEngine,
+              SalesStatus,
+          )
+          from backend.engines.customer_business import (
+              CustomerBusinessEngine,
+          )
+          from backend.engines.work_business import (
+              WorkBusinessEngine,
+              WorkStatus,
+              PaymentStatus,
+          )
+
+          print("=" * 60)
+          print("MAIN BASE FOUNDATION BUSINESS FLOW TEST")
+          print("=" * 60)
+
+          # --------------------------------------------------
+          # 1. LEADS ENGINE
+          # --------------------------------------------------
+
+          leads = LeadsBusinessEngine()
+
+          lead = leads.create_lead(
+              lead_id="LEAD-001",
+              business_name="TEST BUSINESS",
+              category="DIGITAL SERVICES",
+              location="JAIPUR",
+              website="https://example.com",
+              public_contact="test@example.com",
+              source="PUBLIC_BUSINESS_DATA",
+          )
+
+          assert lead.status == LeadStatus.NEW
+
+          leads.verify_lead("LEAD-001")
+          leads.update_status("LEAD-001", LeadStatus.QUALIFIED)
+
+          assert leads.get_lead("LEAD-001").status == LeadStatus.QUALIFIED
+
+          print("LEADS ENGINE: PASS")
+
+          # --------------------------------------------------
+          # 2. SALES ENGINE
+          # --------------------------------------------------
+
+          sales = SalesBusinessEngine()
+
+          opportunity = sales.create_opportunity(
+              opportunity_id="OPP-001",
+              lead_id="LEAD-001",
+              title="Digital Business Project",
+              description="Test sales opportunity",
+              value=10000,
+          )
+
+          assert opportunity.status == SalesStatus.NEW
+
+          sales.qualify("OPP-001")
+          sales.create_proposal("OPP-001")
+          sales.start_negotiation("OPP-001")
+          sales.mark_won(
+              "OPP-001",
+              customer_id="CUSTOMER-001",
+          )
+
+          assert (
+              sales.get_opportunity("OPP-001").status
+              == SalesStatus.WON
+          )
+
+          print("SALES ENGINE: PASS")
+
+          # --------------------------------------------------
+          # 3. CUSTOMER ENGINE
+          # --------------------------------------------------
+
+          customers = CustomerBusinessEngine()
+
+          customer = customers.create_customer(
+              customer_id="CUSTOMER-001",
+              name="Test Customer",
+              email="customer@example.com",
+              phone="+910000000000",
+              organization="TEST BUSINESS",
+              source_opportunity_id="OPP-001",
+          )
+
+          assert customer.status.value == "ACTIVE"
+
+          print("CUSTOMER ENGINE: PASS")
+
+          # --------------------------------------------------
+          # 4. WORK ENGINE
+          # --------------------------------------------------
+
+          work_engine = WorkBusinessEngine(
+              platform_fee_rate=0.10
+          )
+
+          work = work_engine.create_work(
+              work_id="WORK-001",
+              client_id="CUSTOMER-001",
+              title="Test Work",
+              description="Test freelancer work",
+              budget=10000,
+          )
+
+          assert work.status == WorkStatus.POSTED
+
+          work_engine.assign_freelancer(
+              work_id="WORK-001",
+              freelancer_id="FREELANCER-001",
+              ai_assist_allowed=True,
+              human_review_required=True,
+          )
+
+          work_engine.start_work("WORK-001")
+          work_engine.submit_for_review("WORK-001")
+          work_engine.deliver("WORK-001")
+          work_engine.approve("WORK-001")
+
+          assert (
+              work_engine.get_work("WORK-001").status
+              == WorkStatus.APPROVED
+          )
+
+          print("WORK ENGINE: PASS")
+
+          # --------------------------------------------------
+          # 5. PAYMENT + PLATFORM COMMISSION
+          # --------------------------------------------------
+
+          payment = work_engine.create_payment(
+              payment_id="PAYMENT-001",
+              work_id="WORK-001",
+          )
+
+          assert payment.gross_amount == 10000
+          assert payment.platform_fee == 1000
+          assert payment.freelancer_amount == 9000
+          assert payment.status == PaymentStatus.PENDING
+
+          work_engine.authorize_payment("PAYMENT-001")
+          work_engine.mark_payment_held("PAYMENT-001")
+          work_engine.release_payment("PAYMENT-001")
+
+          payment = work_engine.payments["PAYMENT-001"]
+
+          assert payment.status == PaymentStatus.RELEASED
+
+          print("PAYMENT + COMMISSION: PASS")
+
+          # --------------------------------------------------
+          # FINAL
+          # --------------------------------------------------
+
+          print("=" * 60)
+          print("BUSINESS FLOW TEST PASSED")
+          print("=" * 60)
+          PY
