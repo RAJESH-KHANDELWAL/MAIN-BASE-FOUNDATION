@@ -7,15 +7,14 @@ from backend.engines.api.manager import APIEngine
 from backend.engines.ai.manager import AIEngine
 from backend.engines.foundation.manager import FoundationEngine
 from backend.engines.work_business import WorkBusinessEngine
+from backend.engines.leads_business import LeadsBusinessEngine
 
 
 class Bootstrap:
-
     def __init__(self):
         self.engine_manager = EngineManager()
 
     def register_engines(self):
-
         self.engine_manager.register_engine(
             "database",
             DatabaseEngine()
@@ -51,8 +50,12 @@ class Bootstrap:
             WorkBusinessEngine()
         )
 
-    def boot(self):
+        self.engine_manager.register_engine(
+            "leads_business",
+            LeadsBusinessEngine()
+        )
 
+    def boot(self):
         self.register_engines()
 
         self.engine_manager.start_all()
@@ -61,23 +64,30 @@ class Bootstrap:
             "foundation": "MAIN BASE FOUNDATION",
             "version": "1.0.0",
             "status": "RUNNING",
+
             "engines": self.engine_manager.engine_status(),
+
             "modules": [
                 "Core",
                 "Config",
                 "Identity",
                 "Authentication",
+
                 "Database",
                 "Storage",
                 "Security",
                 "API",
                 "AI",
                 "Foundation",
+
+                "Leads Business",
                 "Work Business",
+
                 "Users",
                 "Organizations",
                 "Roles",
                 "Permissions",
+
                 "File Manager",
                 "Registry",
                 "Synchronization",
@@ -87,7 +97,6 @@ class Bootstrap:
         }
 
     def shutdown(self):
-
         self.engine_manager.stop_all()
 
         return {
