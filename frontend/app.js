@@ -18,7 +18,9 @@ function getElement(id) {
 
 
 function setText(id, value) {
-    const element = getElement(id);
+
+    const element =
+        getElement(id);
 
     if (element) {
         element.textContent = value;
@@ -27,9 +29,12 @@ function setText(id, value) {
 
 
 function escapeHTML(value) {
-    const element = document.createElement("div");
 
-    element.textContent = value ?? "";
+    const element =
+        document.createElement("div");
+
+    element.textContent =
+        value ?? "";
 
     return element.innerHTML;
 }
@@ -39,21 +44,28 @@ function escapeHTML(value) {
    API REQUEST
    ========================================================= */
 
-async function apiRequest(path, options = {}) {
+async function apiRequest(
+    path,
+    options = {}
+) {
 
-    const response = await fetch(
-        `${API_BASE_URL}${path}`,
-        {
-            ...options,
+    const response =
+        await fetch(
+            `${API_BASE_URL}${path}`,
+            {
+                ...options,
 
-            headers: {
-                "Content-Type": "application/json",
-                ...(options.headers || {})
+                headers: {
+                    "Content-Type":
+                        "application/json",
+
+                    ...(options.headers || {})
+                }
             }
-        }
-    );
+        );
 
     if (!response.ok) {
+
         throw new Error(
             `API request failed: ${response.status}`
         );
@@ -69,7 +81,8 @@ async function apiRequest(path, options = {}) {
 
 async function checkAPIStatus() {
 
-    const statusElement = getElement("apiStatus");
+    const statusElement =
+        getElement("apiStatus");
 
     if (!statusElement) {
         return;
@@ -77,7 +90,8 @@ async function checkAPIStatus() {
 
     try {
 
-        const data = await apiRequest("/");
+        const data =
+            await apiRequest("/");
 
         if (
             data &&
@@ -114,25 +128,24 @@ async function loadProfiles() {
 
     try {
 
-        const profiles =
-            await apiRequest("/profiles/");
-
-        if (Array.isArray(profiles)) {
-
-            setText(
-                "profileCount",
-                profiles.length
+        const response =
+            await apiRequest(
+                "/profiles/"
             );
 
-            return profiles;
-        }
+        const profiles =
+            Array.isArray(response)
+                ? response
+                : Array.isArray(response?.data)
+                    ? response.data
+                    : [];
 
         setText(
             "profileCount",
-            0
+            profiles.length
         );
 
-        return [];
+        return profiles;
 
     } catch (error) {
 
@@ -166,13 +179,34 @@ async function loadOpportunities() {
 
     try {
 
-        const opportunities =
+        const response =
             await apiRequest(
                 "/opportunities/live"
             );
 
+        /*
+         * Backend may return:
+         *
+         * [
+         *     {...}
+         * ]
+         *
+         * OR
+         *
+         * {
+         *     message: "...",
+         *     data: [...]
+         * }
+         */
+
+        const opportunities =
+            Array.isArray(response)
+                ? response
+                : Array.isArray(response?.data)
+                    ? response.data
+                    : [];
+
         if (
-            !Array.isArray(opportunities) ||
             opportunities.length === 0
         ) {
 
@@ -309,7 +343,8 @@ function createOpportunityCard(
             <div class="opportunity-meta">
 
                 <span class="opportunity-tag">
-                    ${currency} ${budget.toLocaleString("en-IN")}
+                    ${currency}
+                    ${budget.toLocaleString("en-IN")}
                 </span>
 
                 ${skillTags}
