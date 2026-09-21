@@ -14,8 +14,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from backend.auth.service import AuthenticationService
-from backend.gallery_woult.service import GalleryWoultService
-
+from backend.gallary_woult.service import GalleryWoultService
 
 router = APIRouter(
     prefix="/gallary-woult",
