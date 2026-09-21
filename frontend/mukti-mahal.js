@@ -699,7 +699,539 @@ function updateCamera() {
         cameraTarget
     );
 }
+/* =========================================================
+   NEAREST LOCATION
+   ========================================================= */
 
+let nearestLocation = null;
+
+
+function findNearestLocation() {
+
+    let nearest =
+        null;
+
+    let nearestDistance =
+        Infinity;
+
+
+    for (
+        const location
+        of locations
+    ) {
+
+        const distance =
+            player.position.distanceTo(
+                location.position
+            );
+
+
+        if (
+            distance <
+            nearestDistance
+        ) {
+
+            nearestDistance =
+                distance;
+
+            nearest =
+                location;
+        }
+    }
+
+
+    nearestLocation =
+        nearest;
+
+
+    return nearest;
+}
+
+
+/* =========================================================
+   INTERACTION
+   ========================================================= */
+
+function interact() {
+
+    const location =
+        findNearestLocation();
+
+
+    if (!location) {
+        return;
+    }
+
+
+    const distance =
+        player.position.distanceTo(
+            location.position
+        );
+
+
+    if (
+        distance >
+        35
+    ) {
+
+        runtimeStatus.textContent =
+            "Move closer to a location to interact.";
+
+        return;
+    }
+
+
+    interactionTitle.textContent =
+        location.userData.name;
+
+
+    interactionDescription.textContent =
+        location.userData.description;
+
+
+    interactionPanel.classList.add(
+        "active"
+    );
+
+
+    runtimeStatus.textContent =
+        `INTERACTING — ${location.userData.name}`;
+}
+
+
+/* =========================================================
+   CLOSE INTERACTION
+   ========================================================= */
+
+interactionClose.addEventListener(
+    "click",
+    () => {
+
+        interactionPanel.classList.remove(
+            "active"
+        );
+
+        runtimeStatus.textContent =
+            cinematicMode
+                ? "MUKTI MAHAL — CINEMATIC MOVIE MODE"
+                : "MUKTI MAHAL — GAME MODE";
+    }
+);
+
+
+/* =========================================================
+   STATUS / LOCATION HUD
+   ========================================================= */
+
+function updateStatus() {
+
+    const location =
+        findNearestLocation();
+
+
+    if (!location) {
+        return;
+    }
+
+
+    const distance =
+        player.position.distanceTo(
+            location.position
+        );
+
+
+    if (
+        distance <= 35
+    ) {
+
+        runtimeStatus.textContent =
+            `${location.userData.name} — PRESS E TO ENTER`;
+    }
+    else {
+
+        runtimeStatus.textContent =
+            "MUKTI MAHAL — GAME MODE";
+    }
+}
+
+
+/* =========================================================
+   RESIZE
+   ========================================================= */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
+
+
+        camera.updateProjectionMatrix();
+
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+
+
+        renderer.setPixelRatio(
+            Math.min(
+                window.devicePixelRatio || 1,
+                2
+            )
+        );
+    }
+);
+
+
+/* =========================================================
+   INITIAL CAMERA
+   ========================================================= */
+
+camera.position.set(
+    0,
+    9,
+    -101
+);
+
+
+camera.lookAt(
+    0,
+    3,
+    -90
+);
+
+
+/* =========================================================
+   MUKTI MAHAL CINEMATIC MODE
+   GAME + MOVIE CAMERA
+   ========================================================= */
+
+let cinematicMode =
+    false;
+
+let cinematicIndex =
+    0;
+
+let cinematicElapsed =
+    0;
+
+
+const cinematicShots = [
+
+    {
+        position:
+            new THREE.Vector3(
+                0,
+                16,
+                -150
+            ),
+
+        target:
+            new THREE.Vector3(
+                0,
+                7,
+                -70
+            ),
+
+        duration:
+            7
+    },
+
+
+    {
+        position:
+            new THREE.Vector3(
+                58,
+                13,
+                -82
+            ),
+
+        target:
+            new THREE.Vector3(
+                0,
+                10,
+                -35
+            ),
+
+        duration:
+            7
+    },
+
+
+    {
+        position:
+            new THREE.Vector3(
+                105,
+                20,
+                28
+            ),
+
+        target:
+            new THREE.Vector3(
+                0,
+                10,
+                0
+            ),
+
+        duration:
+            8
+    },
+
+
+    {
+        position:
+            new THREE.Vector3(
+                -105,
+                20,
+                70
+            ),
+
+        target:
+            new THREE.Vector3(
+                0,
+                9,
+                35
+            ),
+
+        duration:
+            8
+    },
+
+
+    {
+        position:
+            new THREE.Vector3(
+                0,
+                24,
+                145
+            ),
+
+        target:
+            new THREE.Vector3(
+                0,
+                8,
+                35
+            ),
+
+        duration:
+            8
+    }
+
+];
+
+
+function setCinematicMode(
+    enabled
+) {
+
+    cinematicMode =
+        enabled;
+
+
+    cinematicIndex =
+        0;
+
+
+    cinematicElapsed =
+        0;
+
+
+    if (
+        cinematicMode
+    ) {
+
+        keys.clear();
+
+
+        runtimeStatus.textContent =
+            "MUKTI MAHAL — CINEMATIC MOVIE MODE";
+
+    }
+    else {
+
+        runtimeStatus.textContent =
+            "MUKTI MAHAL — GAME MODE";
+
+
+        updateCamera();
+    }
+}
+
+
+/* =========================================================
+   CINEMATIC CAMERA UPDATE
+   ========================================================= */
+
+function updateCinematic(
+    delta
+) {
+
+    if (
+        !cinematicMode
+    ) {
+        return;
+    }
+
+
+    const shot =
+        cinematicShots[
+            cinematicIndex
+        ];
+
+
+    cinematicElapsed +=
+        delta;
+
+
+    const progress =
+        Math.min(
+            cinematicElapsed /
+                shot.duration,
+            1
+        );
+
+
+    const eased =
+        progress *
+        progress *
+        (3 - 2 * progress);
+
+
+    camera.position.lerp(
+        shot.position,
+        0.018 +
+        eased *
+        0.012
+    );
+
+
+    camera.lookAt(
+        shot.target
+    );
+
+
+    if (
+        cinematicElapsed >=
+        shot.duration
+    ) {
+
+        cinematicIndex =
+            (
+                cinematicIndex +
+                1
+            ) %
+            cinematicShots.length;
+
+
+        cinematicElapsed =
+            0;
+    }
+}
+
+
+/* =========================================================
+   CINEMATIC KEY CONTROLS
+   C = CINEMATIC MODE
+   ESC = GAME MODE
+   ========================================================= */
+
+window.addEventListener(
+    "keydown",
+    event => {
+
+        const key =
+            event.key.toLowerCase();
+
+
+        if (
+            key === "c"
+        ) {
+
+            setCinematicMode(
+                !cinematicMode
+            );
+        }
+
+
+        if (
+            key === "escape" &&
+            cinematicMode
+        ) {
+
+            setCinematicMode(
+                false
+            );
+        }
+    }
+);
+
+
+/* =========================================================
+   GAME LOOP
+   ========================================================= */
+
+let previousFrameTime =
+    performance.now();
+
+
+function animate() {
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    const now =
+        performance.now();
+
+
+    const delta =
+        Math.min(
+            (
+                now -
+                previousFrameTime
+            ) / 1000,
+            0.05
+        );
+
+
+    previousFrameTime =
+        now;
+
+
+    if (
+        !cinematicMode
+    ) {
+
+        updatePlayer();
+
+        updateCamera();
+
+        updateStatus();
+    }
+
+
+    updateCinematic(
+        delta
+    );
+
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+
+/* =========================================================
+   START MUKTI MAHAL
+   ========================================================= */
+
+animate();
 
 
 
