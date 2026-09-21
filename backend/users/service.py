@@ -1,3 +1,5 @@
+"""User persistence and authentication services."""
+
 from __future__ import annotations
 
 import hashlib
@@ -10,22 +12,17 @@ from backend.users.model import User
 
 
 class UserService:
-    """MAIN BASE FOUNDATION User Service."""
+    """Manage users and securely store password hashes."""
 
     PASSWORD_ITERATIONS = 310000
-    PASSWORD_SALT_BYTES = 16
+    PASSWORD_SALT_BYTES = 32
 
     def __init__(self):
         self.database = DatabaseService()
         self.initialize()
 
-    # ------------------------------------------------------------------
-    # INITIALIZATION
-    # ------------------------------------------------------------------
-
     def initialize(self):
-        """Initialize the users table and migrate legacy passwords."""
-
+        """Create and migrate the users table."""
         self.database.initialize()
 
         self.database.execute(
@@ -33,98 +30,54 @@ class UserService:
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
                 full_name TEXT NOT NULL,
-                username TEXT UNIQUE NOT NULL,
-                email TEXT,
-                phone TEXT,
+                username TEXT NOT NULL UNIQUE,
+                email TEXT NOT NULL,
+                phone TEXT NOT NULL,
                 password TEXT,
                 password_hash TEXT,
-                role TEXT DEFAULT 'USER',
-                status TEXT DEFAULT 'ACTIVE'
+                role TEXT NOT NULL DEFAULT 'USER',
+                status TEXT NOT NULL DEFAULT 'ACTIVE'
             )
             """
         )
 
-        # ------------------------------------------------------------------
-        # PASSWORD HASH COLUMN MIGRATION
-        # ------------------------------------------------------------------
+        self._migrate_legacy_passwords()
 
-        columns = self.database.fetchall(
-            "PRAGMA table_info(users)"
-        )
-
-        column_names = {
-            column["name"]
-            for column in columns
-        }
-
-        if "password_hash" not in column_names:
-            self.database.execute(
-                """
-                ALTER TABLE users
-                ADD COLUMN password_hash TEXT
-                """
-            )
-
-        # ------------------------------------------------------------------
-        # LEGACY PLAINTEXT PASSWORD MIGRATION
-        # ------------------------------------------------------------------
-
-        legacy_users = self.database.fetchall(
+    def _migrate_legacy_passwords(self):
+        """Convert legacy plaintext passwords to PBKDF2 hashes."""
+        rows = self.database.fetchall(
             """
-            SELECT
-                user_id,
-                password
+            SELECT user_id, password
             FROM users
-            WHERE
-                password IS NOT NULL
-                AND password != ''
-                AND (
-                    password_hash IS NULL
-                    OR password_hash = ''
-                )
+            WHERE password IS NOT NULL
+              AND password != ''
+              AND (password_hash IS NULL OR password_hash = '')
             """
         )
 
-        for row in legacy_users:
-            password_hash = self.hash_password(
-                row["password"]
-            )
+        for row in rows:
+            password = row["password"]
+            password_hash = self._hash_password(password)
 
             self.database.execute(
                 """
                 UPDATE users
-                SET
-                    password = '',
-                    password_hash = ?
+                SET password_hash = ?,
+                    password = NULL
                 WHERE user_id = ?
                 """,
-                (
-                    password_hash,
-                    row["user_id"],
-                ),
+                (password_hash, row["user_id"]),
             )
 
-        return {
-            "service": "UserService",
-            "status": "INITIALIZED",
-        }
-
-    # ------------------------------------------------------------------
-    # PASSWORD SECURITY
-    # ------------------------------------------------------------------
-
     @classmethod
-    def hash_password(cls, password: str) -> str:
-        """Create a secure PBKDF2-HMAC-SHA256 password hash."""
-
+    def _hash_password(cls, password: str) -> str:
+        """Create a PBKDF2-HMAC-SHA256 password hash."""
         if not password:
-            raise ValueError("Password cannot be empty.")
+            raise ValueError("Password is required.")
 
-        salt = secrets.token_bytes(
-            cls.PASSWORD_SALT_BYTES
-        )
+        salt = secrets.token_bytes(cls.PASSWORD_SALT_BYTES)
 
-        password_hash = hashlib.pbkdf2_hmac(
+        derived_key = hashlib.pbkdf2_hmac(
             "sha256",
             password.encode("utf-8"),
             salt,
@@ -132,53 +85,50 @@ class UserService:
         )
 
         return (
-            f"pbkdf2_sha256$"
-            f"{cls.PASSWORD_ITERATIONS}$"
-            f"{salt.hex()}$"
-            f"{password_hash.hex()}"
+            f"pbkdf2_sha256${cls.PASSWORD_ITERATIONS}$"
+            f"{salt.hex()}${derived_key.hex()}"
         )
 
     @classmethod
-    def verify_password(
+    def _verify_password_hash(
         cls,
         password: str,
         stored_hash: str,
     ) -> bool:
-        """Verify a password against a stored PBKDF2 hash."""
-
-        if not password or not stored_hash:
-            return False
-
+        """Verify a PBKDF2 password hash."""
         try:
-            algorithm, iterations, salt_hex, hash_hex = (
-                stored_hash.split("$")
-            )
+            algorithm, iterations, salt_hex, hash_hex = stored_hash.split("$")
 
             if algorithm != "pbkdf2_sha256":
                 return False
 
-            expected_hash = hashlib.pbkdf2_hmac(
+            iterations = int(iterations)
+
+            salt = bytes.fromhex(salt_hex)
+            expected_hash = bytes.fromhex(hash_hex)
+
+            actual_hash = hashlib.pbkdf2_hmac(
                 "sha256",
                 password.encode("utf-8"),
-                bytes.fromhex(salt_hex),
-                int(iterations),
+                salt,
+                iterations,
             )
 
             return hmac.compare_digest(
-                expected_hash.hex(),
-                hash_hex,
+                actual_hash,
+                expected_hash,
             )
 
         except (ValueError, TypeError):
             return False
 
-    # ------------------------------------------------------------------
-    # CREATE
-    # ------------------------------------------------------------------
+    @staticmethod
+    def _generate_user_id() -> str:
+        """Generate a unique user identifier."""
+        return f"USR-{secrets.token_hex(8).upper()}"
 
     def create_user(
         self,
-        user_id: str,
         full_name: str,
         username: str,
         email: str,
@@ -186,13 +136,47 @@ class UserService:
         password: str,
         role: str = "USER",
         status: str = "ACTIVE",
+        user_id: Optional[str] = None,
     ) -> User:
-        """Create a User model and securely hash the password."""
+        """Create a new user."""
+        full_name = full_name.strip()
+        username = username.strip()
+        email = email.strip()
+        phone = phone.strip()
+        role = role.strip().upper()
+        status = status.strip().upper()
 
-        password_hash = self.hash_password(password)
+        if not full_name:
+            raise ValueError("Full name is required.")
+
+        if not username:
+            raise ValueError("Username is required.")
+
+        if not email:
+            raise ValueError("Email is required.")
+
+        if not phone:
+            raise ValueError("Phone is required.")
+
+        if not password:
+            raise ValueError("Password is required.")
+
+        if role not in {"USER", "ADMIN", "MANAGER", "OWNER"}:
+            raise ValueError("Invalid user role.")
+
+        if status not in {"ACTIVE", "INACTIVE", "BLOCKED", "DELETED"}:
+            raise ValueError("Invalid user status.")
+
+        if self.search_user_by_username(username):
+            raise ValueError("Username already exists.")
+
+        final_user_id = user_id.strip() if user_id else self._generate_user_id()
+
+        if self.get_user(final_user_id):
+            raise ValueError("User ID already exists.")
 
         user = User(
-            user_id=user_id,
+            user_id=final_user_id,
             full_name=full_name,
             username=username,
             email=email,
@@ -201,31 +185,20 @@ class UserService:
             status=status,
         )
 
-        user._password_hash = password_hash
+        user._password_hash = self._hash_password(password)
 
         return user
 
-    # ------------------------------------------------------------------
-    # SAVE
-    # ------------------------------------------------------------------
-
     def save_user(self, user: User):
-        """Save a user with a secure password hash."""
-
-        password_hash = getattr(
-            user,
-            "_password_hash",
-            None,
-        )
+        """Persist a new user."""
+        password_hash = getattr(user, "_password_hash", None)
 
         if not password_hash:
-            raise ValueError(
-                "Password hash is required to save a user."
-            )
+            raise ValueError("Password hash is missing.")
 
         self.database.execute(
             """
-            INSERT OR REPLACE INTO users (
+            INSERT INTO users (
                 user_id,
                 full_name,
                 username,
@@ -236,7 +209,7 @@ class UserService:
                 role,
                 status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)
             """,
             (
                 user.user_id,
@@ -244,7 +217,6 @@ class UserService:
                 user.username,
                 user.email,
                 user.phone,
-                "",
                 password_hash,
                 user.role,
                 user.status,
@@ -253,12 +225,26 @@ class UserService:
 
         return user
 
-    # ------------------------------------------------------------------
-    # INTERNAL USER CONVERSION
-    # ------------------------------------------------------------------
+    def get_user(self, user_id: str) -> Optional[User]:
+        """Get a user by ID."""
+        row = self.database.fetchone(
+            """
+            SELECT
+                user_id,
+                full_name,
+                username,
+                email,
+                phone,
+                role,
+                status
+            FROM users
+            WHERE user_id = ?
+            """,
+            (user_id,),
+        )
 
-    def _row_to_user(self, row) -> User:
-        """Convert a database row into a safe User object."""
+        if row is None:
+            return None
 
         return User(
             user_id=row["user_id"],
@@ -270,55 +256,89 @@ class UserService:
             status=row["status"],
         )
 
-    # ------------------------------------------------------------------
-    # GET USER
-    # ------------------------------------------------------------------
-
-    def get_user(
-        self,
-        user_id: str,
-    ) -> Optional[User]:
-        """Return one user without password credentials."""
-
-        row = self.database.fetchone(
-            """
-            SELECT
-                user_id,
-                full_name,
-                username,
-                email,
-                phone,
-                role,
-                status
-            FROM users
-            WHERE user_id = ?
-            """,
-            (user_id,),
-        )
-
-        if row is None:
-            return None
-
-        return self._row_to_user(row)
-
-    # ------------------------------------------------------------------
-    # UPDATE
-    # ------------------------------------------------------------------
-
     def update_user(
         self,
         user_id: str,
-        full_name: str,
-        username: str,
-        email: str,
-        phone: str,
-        password: str,
-        role: str,
-        status: str,
-    ):
-        """Update an existing user securely."""
+        full_name: Optional[str] = None,
+        username: Optional[str] = None,
+        email: Optional[str] = None,
+        phone: Optional[str] = None,
+        password: Optional[str] = None,
+        role: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> Optional[User]:
+        """Update supplied user fields."""
+        current = self.get_user(user_id)
 
-        password_hash = self.hash_password(password)
+        if current is None:
+            return None
+
+        new_full_name = (
+            full_name.strip()
+            if full_name is not None
+            else current.full_name
+        )
+
+        new_username = (
+            username.strip()
+            if username is not None
+            else current.username
+        )
+
+        new_email = (
+            email.strip()
+            if email is not None
+            else current.email
+        )
+
+        new_phone = (
+            phone.strip()
+            if phone is not None
+            else current.phone
+        )
+
+        new_role = (
+            role.strip().upper()
+            if role is not None
+            else current.role
+        )
+
+        new_status = (
+            status.strip().upper()
+            if status is not None
+            else current.status
+        )
+
+        if not new_full_name:
+            raise ValueError("Full name cannot be empty.")
+
+        if not new_username:
+            raise ValueError("Username cannot be empty.")
+
+        if not new_email:
+            raise ValueError("Email cannot be empty.")
+
+        if not new_phone:
+            raise ValueError("Phone cannot be empty.")
+
+        if new_role not in {"USER", "ADMIN", "MANAGER", "OWNER"}:
+            raise ValueError("Invalid user role.")
+
+        if new_status not in {
+            "ACTIVE",
+            "INACTIVE",
+            "BLOCKED",
+            "DELETED",
+        }:
+            raise ValueError("Invalid user status.")
+
+        existing_username = self.search_user_by_username(new_username)
+
+        if (
+            existing_username is not None
+            and existing_username.user_id != user_id
+        ):
+            raise ValueError("Username already exists.")
 
         self.database.execute(
             """
@@ -328,36 +348,45 @@ class UserService:
                 username = ?,
                 email = ?,
                 phone = ?,
-                password = ?,
-                password_hash = ?,
                 role = ?,
                 status = ?
             WHERE user_id = ?
             """,
             (
-                full_name,
-                username,
-                email,
-                phone,
-                "",
-                password_hash,
-                role,
-                status,
+                new_full_name,
+                new_username,
+                new_email,
+                new_phone,
+                new_role,
+                new_status,
                 user_id,
             ),
         )
 
+        if password is not None:
+            if not password:
+                raise ValueError("Password cannot be empty.")
+
+            password_hash = self._hash_password(password)
+
+            self.database.execute(
+                """
+                UPDATE users
+                SET password_hash = ?,
+                    password = NULL
+                WHERE user_id = ?
+                """,
+                (password_hash, user_id),
+            )
+
         return self.get_user(user_id)
 
-    # ------------------------------------------------------------------
-    # DELETE
-    # ------------------------------------------------------------------
+    def delete_user(self, user_id: str) -> bool:
+        """Delete a user permanently."""
+        existing = self.get_user(user_id)
 
-    def delete_user(
-        self,
-        user_id: str,
-    ):
-        """Delete a user by ID."""
+        if existing is None:
+            return False
 
         self.database.execute(
             """
@@ -367,18 +396,10 @@ class UserService:
             (user_id,),
         )
 
-        return {
-            "user_id": user_id,
-            "status": "DELETED",
-        }
+        return True
 
-    # ------------------------------------------------------------------
-    # LIST
-    # ------------------------------------------------------------------
-
-    def get_all_users(self):
-        """Return all users without password credentials."""
-
+    def get_all_users(self) -> list[User]:
+        """Return all users."""
         rows = self.database.fetchall(
             """
             SELECT
@@ -390,25 +411,28 @@ class UserService:
                 role,
                 status
             FROM users
-            ORDER BY rowid
+            ORDER BY rowid DESC
             """
         )
 
         return [
-            self._row_to_user(row)
+            User(
+                user_id=row["user_id"],
+                full_name=row["full_name"],
+                username=row["username"],
+                email=row["email"],
+                phone=row["phone"],
+                role=row["role"],
+                status=row["status"],
+            )
             for row in rows
         ]
-
-    # ------------------------------------------------------------------
-    # SEARCH
-    # ------------------------------------------------------------------
 
     def search_user_by_username(
         self,
         username: str,
-    ):
-        """Search for a user without returning password credentials."""
-
+    ) -> Optional[User]:
+        """Find a user by exact username."""
         row = self.database.fetchone(
             """
             SELECT
@@ -428,22 +452,25 @@ class UserService:
         if row is None:
             return None
 
-        return self._row_to_user(row)
-
-    # ------------------------------------------------------------------
-    # PASSWORD VERIFICATION
-    # ------------------------------------------------------------------
+        return User(
+            user_id=row["user_id"],
+            full_name=row["full_name"],
+            username=row["username"],
+            email=row["email"],
+            phone=row["phone"],
+            role=row["role"],
+            status=row["status"],
+        )
 
     def verify_user_password(
         self,
         username: str,
         password: str,
     ) -> bool:
-        """Verify a user's password without exposing it."""
-
+        """Verify a user's password."""
         row = self.database.fetchone(
             """
-            SELECT password_hash
+            SELECT password_hash, status
             FROM users
             WHERE username = ?
             """,
@@ -453,7 +480,18 @@ class UserService:
         if row is None:
             return False
 
-        return self.verify_password(
+        if row["status"] != "ACTIVE":
+            return False
+
+        stored_hash = row["password_hash"]
+
+        if not stored_hash:
+            return False
+
+        return self._verify_password_hash(
             password,
-            row["password_hash"],
+            stored_hash,
         )
+
+
+__all__ = ["UserService"]
