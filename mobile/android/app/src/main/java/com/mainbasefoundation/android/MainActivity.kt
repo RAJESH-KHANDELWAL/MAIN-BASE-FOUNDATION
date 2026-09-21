@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
-    private val appUrl = "https://YOUR-PRODUCTION-DOMAIN.com"
+private val appUrl = "https://rajeshkhandelwalofficial.onrender.com"
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
