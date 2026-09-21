@@ -11,7 +11,7 @@ object ApiConfig {
      * Do NOT put API keys, passwords, database credentials,
      * or private secrets in this file.
      */
-    const val BASE_URL = "https://YOUR-PRODUCTION-DOMAIN.com"
+const val BASE_URL = "https://rajeshkhandelwalofficial.onrender.com"
 
     const val AUTH_PATH = "/auth"
     const val USERS_PATH = "/users"
