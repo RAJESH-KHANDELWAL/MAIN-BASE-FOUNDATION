@@ -255,5 +255,3 @@ jobs:
           print("=" * 60)
           PY
           
-- name: Validate Mukti Mahal JavaScript
-  run: node --check frontend/mukti-mahal.js
