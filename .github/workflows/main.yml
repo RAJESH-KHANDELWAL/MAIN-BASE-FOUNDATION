@@ -254,3 +254,6 @@ jobs:
           print("BUSINESS API TEST PASSED")
           print("=" * 60)
           PY
+          
+- name: Validate Mukti Mahal JavaScript
+  run: node --check frontend/mukti-mahal.js
