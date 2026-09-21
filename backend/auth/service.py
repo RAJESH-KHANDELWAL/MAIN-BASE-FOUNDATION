@@ -1,31 +1,31 @@
-from datetime import datetime, timedelta, timezone
+"""Authentication and session management service."""
+
+from __future__ import annotations
+
 import hashlib
 import secrets
+from datetime import datetime, timedelta, timezone
 
+from backend.auth.model import AuthenticationInfo
+from backend.database.service import DatabaseService
 from backend.identity.service import IdentityService
 from backend.users.service import UserService
-from backend.database.service import DatabaseService
-from backend.auth.model import AuthenticationInfo
 
 
 class AuthenticationService:
+    """Manage password authentication and secure sessions."""
 
     SESSION_DURATION_HOURS = 24
 
     def __init__(self):
-
         self.identity_service = IdentityService()
         self.user_service = UserService()
         self.database_service = DatabaseService()
 
         self.initialize_sessions()
 
-    # ------------------------------------------------------------------
-    # SESSION DATABASE
-    # ------------------------------------------------------------------
-
     def initialize_sessions(self):
-
+        """Create and migrate authentication session storage."""
         self.database_service.initialize()
 
         self.database_service.execute(
@@ -46,106 +46,113 @@ class AuthenticationService:
 
         return {
             "success": True,
-            "message": "Authentication session storage initialized"
+            "message": "Authentication session storage initialized",
         }
-
-    # ------------------------------------------------------------------
-    # TOKEN SECURITY
-    # ------------------------------------------------------------------
 
     @staticmethod
     def hash_token(token: str) -> str:
-        """Return a one-way hash of an authentication token."""
-
+        """Return a SHA-256 hash of a session token."""
         return hashlib.sha256(
             token.encode("utf-8")
         ).hexdigest()
 
-    # ------------------------------------------------------------------
-    # IDENTITY AUTHENTICATION
-    # ------------------------------------------------------------------
-
-    def authenticate(self, master_id):
-
+    def authenticate(self, master_id: str):
+        """Authenticate an existing master identity."""
         identity = self.identity_service.get_identity(
             master_id
         )
 
         if identity is None:
-
             return {
                 "authenticated": False,
-                "message": "Identity Not Found"
+                "message": "Identity Not Found",
+            }
+
+        if identity.status != "ACTIVE":
+            return {
+                "authenticated": False,
+                "message": "Identity is not active",
+            }
+
+        user = self.user_service.search_user_by_username(
+            identity.username
+        )
+
+        if user is not None and user.status != "ACTIVE":
+            return {
+                "authenticated": False,
+                "message": "User account is not active",
             }
 
         return AuthenticationInfo(
-
             master_id=identity.master_id,
             identity_id=identity.identity_id,
             supreme_id=identity.supreme_id,
-
             full_name=identity.full_name,
             username=identity.username,
             email=identity.email,
             phone=identity.phone,
-
             authenticated=True,
-            status=identity.status
-
+            status=identity.status,
         )
-
-    # ------------------------------------------------------------------
-    # PASSWORD LOGIN
-    # ------------------------------------------------------------------
 
     def login_with_password(
         self,
         username: str,
-        password: str
+        password: str,
     ):
+        """Authenticate a user with username and password."""
+        username = username.strip()
+
+        if not username or not password:
+            return {
+                "authenticated": False,
+                "message": "Username and password are required",
+            }
 
         user = self.user_service.search_user_by_username(
             username
         )
 
         if user is None:
-
             return {
                 "authenticated": False,
-                "message": "Invalid username or password"
+                "message": "Invalid username or password",
+            }
+
+        if user.status != "ACTIVE":
+            return {
+                "authenticated": False,
+                "message": "User account is not active",
             }
 
         verified = self.user_service.verify_user_password(
             username,
-            password
+            password,
         )
 
         if not verified:
-
             return {
                 "authenticated": False,
-                "message": "Invalid username or password"
+                "message": "Invalid username or password",
             }
 
-        if user.status != "ACTIVE":
-
-            return {
-                "authenticated": False,
-                "message": "User account is not active"
-            }
+        identity = self.identity_service.search_identity(
+            username
+        )
 
         now = datetime.now(timezone.utc)
 
         created_at = now.isoformat()
 
         expires_at = (
-            now + timedelta(
+            now
+            + timedelta(
                 hours=self.SESSION_DURATION_HOURS
             )
         ).isoformat()
 
         session_id = secrets.token_urlsafe(32)
-
         token = secrets.token_urlsafe(48)
 
         token_hash = self.hash_token(token)
@@ -173,69 +180,71 @@ class AuthenticationService:
                 expires_at,
                 None,
                 created_at,
-            )
+            ),
         )
 
         return AuthenticationInfo(
-
+            master_id=(
+                identity.master_id
+                if identity is not None
+                else ""
+            ),
+            identity_id=(
+                identity.identity_id
+                if identity is not None
+                else ""
+            ),
+            supreme_id=(
+                identity.supreme_id
+                if identity is not None
+                else ""
+            ),
             full_name=user.full_name,
             username=user.username,
             email=user.email,
             phone=user.phone,
-
             authenticated=True,
-
             session_id=session_id,
             token=token,
-
             status=user.status,
-
             last_login=created_at,
             created_at=created_at,
-            updated_at=created_at
-
+            updated_at=created_at,
         )
-
-    # ------------------------------------------------------------------
-    # LOGIN
-    # ------------------------------------------------------------------
 
     def login(
         self,
         master_id=None,
         username=None,
-        password=None
+        password=None,
     ):
-
-        if username is not None and password is not None:
+        """Select the appropriate authentication method."""
+        if username is not None or password is not None:
+            if username is None or password is None:
+                return {
+                    "authenticated": False,
+                    "message": "Username and password are required",
+                }
 
             return self.login_with_password(
                 username,
-                password
+                password,
             )
 
         if master_id is not None:
-
-            return self.authenticate(
-                master_id
-            )
+            return self.authenticate(master_id)
 
         return {
             "authenticated": False,
-            "message": "Authentication credentials required"
+            "message": "Authentication credentials required",
         }
 
-    # ------------------------------------------------------------------
-    # TOKEN VALIDATION
-    # ------------------------------------------------------------------
-
     def validate_token(self, token: str):
-
+        """Validate an active authentication token."""
         if not token:
-
             return {
                 "authenticated": False,
-                "message": "Authentication token required"
+                "message": "Authentication token required",
             }
 
         token_hash = self.hash_token(token)
@@ -252,36 +261,34 @@ class AuthenticationService:
             FROM auth_sessions
             WHERE token_hash = ?
             """,
-            (token_hash,)
+            (token_hash,),
         )
 
         if session is None:
-
             return {
                 "authenticated": False,
-                "message": "Invalid authentication token"
+                "message": "Invalid authentication token",
             }
 
         if session["status"] != "ACTIVE":
-
             return {
                 "authenticated": False,
-                "message": "Authentication session is not active"
+                "message": "Authentication session is not active",
             }
 
         if session["revoked_at"] is not None:
-
             return {
                 "authenticated": False,
-                "message": "Authentication session has been revoked"
+                "message": "Authentication session has been revoked",
             }
 
         expires_at = datetime.fromisoformat(
             session["expires_at"]
         )
 
-        if expires_at <= datetime.now(timezone.utc):
+        now = datetime.now(timezone.utc)
 
+        if expires_at <= now:
             self.database_service.execute(
                 """
                 UPDATE auth_sessions
@@ -292,47 +299,57 @@ class AuthenticationService:
                 """,
                 (
                     "EXPIRED",
-                    datetime.now(timezone.utc).isoformat(),
+                    now.isoformat(),
                     token_hash,
-                )
+                ),
             )
 
             return {
                 "authenticated": False,
-                "message": "Authentication session has expired"
+                "message": "Authentication session has expired",
             }
+
+        identity = self.identity_service.search_identity(
+            session["username"]
+        )
 
         return {
             "authenticated": True,
             "message": "Authentication token is valid",
             "session_id": session["session_id"],
             "username": session["username"],
+            "master_id": (
+                identity.master_id
+                if identity is not None
+                else ""
+            ),
+            "identity_id": (
+                identity.identity_id
+                if identity is not None
+                else ""
+            ),
             "status": session["status"],
             "created_at": session["created_at"],
             "expires_at": session["expires_at"],
         }
 
-    # ------------------------------------------------------------------
-    # LOGOUT
-    # ------------------------------------------------------------------
-
     def logout(
         self,
         token: str | None = None,
-        session_id: str | None = None
+        session_id: str | None = None,
     ):
-
+        """Revoke an authentication session."""
         if token is None and session_id is None:
-
             return {
                 "authenticated": False,
-                "message": "Authentication token or session ID required"
+                "message": (
+                    "Authentication token or session ID required"
+                ),
             }
 
         now = datetime.now(timezone.utc).isoformat()
 
         if token is not None:
-
             token_hash = self.hash_token(token)
 
             session = self.database_service.fetchone(
@@ -341,14 +358,13 @@ class AuthenticationService:
                 FROM auth_sessions
                 WHERE token_hash = ?
                 """,
-                (token_hash,)
+                (token_hash,),
             )
 
             if session is None:
-
                 return {
                     "authenticated": False,
-                    "message": "Authentication session not found"
+                    "message": "Authentication session not found",
                 }
 
             self.database_service.execute(
@@ -365,25 +381,23 @@ class AuthenticationService:
                     now,
                     now,
                     token_hash,
-                )
+                ),
             )
 
         else:
-
             session = self.database_service.fetchone(
                 """
                 SELECT session_id
                 FROM auth_sessions
                 WHERE session_id = ?
                 """,
-                (session_id,)
+                (session_id,),
             )
 
             if session is None:
-
                 return {
                     "authenticated": False,
-                    "message": "Authentication session not found"
+                    "message": "Authentication session not found",
                 }
 
             self.database_service.execute(
@@ -400,20 +414,20 @@ class AuthenticationService:
                     now,
                     now,
                     session_id,
-                )
+                ),
             )
 
         return {
             "authenticated": False,
-            "message": "Logout Successful"
+            "message": "Logout Successful",
         }
 
-    # ------------------------------------------------------------------
-    # INITIALIZE
-    # ------------------------------------------------------------------
-
     def initialize(self):
+        """Return authentication subsystem status."""
+        return {
+            "success": True,
+            "message": "Authentication system initialized",
+        }
 
-        return self.authenticate(
-            "MBF-000001"
-        )
+
+__all__ = ["AuthenticationService"]
