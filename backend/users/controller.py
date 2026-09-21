@@ -1,7 +1,10 @@
+"""User controller layer."""
+
 from backend.users.service import UserService
 
 
 class UserController:
+    """Coordinate API requests with UserService."""
 
     def __init__(self):
         self.service = UserService()
@@ -11,8 +14,7 @@ class UserController:
 
     def register(self, **kwargs):
         user = self.service.create_user(**kwargs)
-        self.service.save_user(user)
-        return user
+        return self.service.save_user(user)
 
     def get(self, user_id):
         return self.service.get_user(user_id)
@@ -28,3 +30,12 @@ class UserController:
 
     def search(self, username):
         return self.service.search_user_by_username(username)
+
+    def verify_password(self, username, password):
+        return self.service.verify_user_password(
+            username,
+            password,
+        )
+
+
+__all__ = ["UserController"]
