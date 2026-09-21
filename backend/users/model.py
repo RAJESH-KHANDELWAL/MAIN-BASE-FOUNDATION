@@ -1,4 +1,4 @@
-"""MAIN BASE FOUNDATION user models."""
+"""User models for MAIN-BASE-FOUNDATION."""
 
 from __future__ import annotations
 
@@ -18,8 +18,7 @@ class User:
     status: str = "ACTIVE"
 
     def to_dict(self) -> dict:
-        """Return a safe public representation of the user."""
-
+        """Return safe public user data."""
         return {
             "user_id": self.user_id,
             "full_name": self.full_name,
@@ -31,6 +30,4 @@ class User:
         }
 
 
-__all__ = [
-    "User",
-]
+__all__ = ["User"]
