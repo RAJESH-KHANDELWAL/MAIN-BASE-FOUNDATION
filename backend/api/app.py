@@ -5,7 +5,28 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 
 from backend.auth.service import AuthenticationService
+
+from backend.api.auth import router as auth_router
+from backend.api.businesses import router as businesses_router
+from backend.api.dashboard import router as dashboard_router
+from backend.api.dns import router as dns_router
 from backend.api.gallary_woult import router as gallary_woult_router
+from backend.api.identity import router as identity_router
+from backend.api.infrastructure import router as infrastructure_router
+from backend.api.matching import router as matching_router
+from backend.api.mukti_mahal import router as mukti_mahal_router
+from backend.api.mukti_mahal_creation import (
+    router as mukti_mahal_creation_router,
+)
+from backend.api.mukti_mahal_media import (
+    router as mukti_mahal_media_router,
+)
+from backend.api.opportunities import router as opportunities_router
+from backend.api.profiles import router as profiles_router
+from backend.api.projects import router as projects_router
+from backend.api.roles import router as roles_router
+from backend.api.supreme import router as supreme_router
+from backend.api.users import router as users_router
 
 
 app = FastAPI(
@@ -14,29 +35,12 @@ app = FastAPI(
 )
 
 
-# ============================================================
-# AUTHENTICATION SERVICE
-# ============================================================
-
 authentication_service = AuthenticationService()
 
 
-# ============================================================
-# AI STORE ACTOR AUTHENTICATION
-# ============================================================
-
 def _require_ai_store_actor(
-    authorization: Optional[str]
+    authorization: Optional[str],
 ) -> str:
-    """
-    Authenticate the caller using the existing authentication system.
-
-    Required header:
-
-        Authorization: Bearer <token>
-
-    The authenticated username becomes the current actor.
-    """
 
     if not authorization:
         raise HTTPException(
@@ -81,6 +85,25 @@ def _require_ai_store_actor(
 
 
 # ============================================================
+# CORE API ROUTERS
+# ============================================================
+
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(identity_router)
+app.include_router(profiles_router)
+app.include_router(businesses_router)
+app.include_router(projects_router)
+app.include_router(opportunities_router)
+app.include_router(matching_router)
+app.include_router(roles_router)
+app.include_router(supreme_router)
+app.include_router(dashboard_router)
+app.include_router(infrastructure_router)
+app.include_router(dns_router)
+
+
+# ============================================================
 # GALLARY WOULT
 # ============================================================
 
@@ -90,15 +113,35 @@ app.include_router(
 
 
 # ============================================================
+# MUKTI MAHAL
+# ============================================================
+
+app.include_router(
+    mukti_mahal_router
+)
+
+app.include_router(
+    mukti_mahal_creation_router
+)
+
+app.include_router(
+    mukti_mahal_media_router
+)
+
+
+# ============================================================
 # ROOT
 # ============================================================
 
 @app.get("/")
 def root():
+
     return {
         "name": "MAIN-BASE-FOUNDATION",
         "status": "RUNNING",
         "gallary_woult": "CONNECTED",
+        "api_surface": "CONNECTED",
+        "mukti_mahal": "CONNECTED",
     }
 
 
@@ -108,6 +151,7 @@ def root():
 
 @app.get("/health")
 def health():
+
     return {
         "status": "healthy",
         "service": "MAIN-BASE-FOUNDATION",
