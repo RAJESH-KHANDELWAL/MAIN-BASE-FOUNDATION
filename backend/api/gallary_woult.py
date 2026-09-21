@@ -2,19 +2,13 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    File,
-    Header,
-    HTTPException,
-    UploadFile,
-)
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from backend.auth.service import AuthenticationService
 from backend.gallary_woult.service import GalleryWoultService
+
 
 router = APIRouter(
     prefix="/gallary-woult",
@@ -41,9 +35,7 @@ def require_actor(
             detail="INVALID_AUTHORIZATION_HEADER",
         )
 
-    token = authorization[
-        len("Bearer "):
-    ].strip()
+    token = authorization[len("Bearer "):].strip()
 
     if not token:
         raise HTTPException(
@@ -51,10 +43,7 @@ def require_actor(
             detail="EMPTY_AUTH_TOKEN",
         )
 
-    result = (
-        authentication_service
-        .validate_token(token)
-    )
+    result = authentication_service.validate_token(token)
 
     if not result.get("authenticated"):
         raise HTTPException(
@@ -91,6 +80,7 @@ class MoveRequest(BaseModel):
 
 class CopyRequest(BaseModel):
     parent_id: Optional[str] = None
+    new_name: Optional[str] = None
 
 
 class LockRequest(BaseModel):
@@ -111,22 +101,19 @@ def create_folder(
 ):
 
     try:
-
         return gallary_woult_service.create_folder(
-            owner_id=actor_id,
+            actor_id=actor_id,
             name=request.name,
             parent_id=request.parent_id,
         )
 
     except PermissionError as exc:
-
         raise HTTPException(
             status_code=403,
             detail=str(exc),
         )
 
     except ValueError as exc:
-
         raise HTTPException(
             status_code=400,
             detail=str(exc),
@@ -136,15 +123,22 @@ def create_folder(
 @router.get("/files")
 def list_files(
     parent_id: Optional[str] = None,
-    include_trashed: bool = False,
+    include_deleted: bool = False,
     actor_id: str = Depends(require_actor),
 ):
 
-    return gallary_woult_service.list_children(
-        owner_id=actor_id,
-        parent_id=parent_id,
-        include_trashed=include_trashed,
-    )
+    try:
+        return gallary_woult_service.list_children(
+            actor_id=actor_id,
+            parent_id=parent_id,
+            include_deleted=include_deleted,
+        )
+
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail=str(exc),
+        )
 
 
 @router.post("/upload")
@@ -162,10 +156,9 @@ async def upload_file(
         )
 
     try:
-
         return gallary_woult_service.upload(
-            owner_id=actor_id,
-            name=file.filename,
+            actor_id=actor_id,
+            filename=file.filename,
             stream=file.file,
             mime_type=file.content_type,
             parent_id=parent_id,
@@ -173,14 +166,12 @@ async def upload_file(
         )
 
     except PermissionError as exc:
-
         raise HTTPException(
             status_code=403,
             detail=str(exc),
         )
 
     except ValueError as exc:
-
         raise HTTPException(
             status_code=400,
             detail=str(exc),
@@ -195,29 +186,25 @@ def rename(
 ):
 
     try:
-
         return gallary_woult_service.rename(
-            owner_id=actor_id,
             object_id=object_id,
-            name=request.name,
+            actor_id=actor_id,
+            new_name=request.name,
         )
 
     except FileNotFoundError as exc:
-
         raise HTTPException(
             status_code=404,
             detail=str(exc),
         )
 
     except PermissionError as exc:
-
         raise HTTPException(
             status_code=403,
             detail=str(exc),
         )
 
     except ValueError as exc:
-
         raise HTTPException(
             status_code=400,
             detail=str(exc),
@@ -232,29 +219,25 @@ def move(
 ):
 
     try:
-
         return gallary_woult_service.move(
-            owner_id=actor_id,
             object_id=object_id,
+            actor_id=actor_id,
             parent_id=request.parent_id,
         )
 
     except FileNotFoundError as exc:
-
         raise HTTPException(
             status_code=404,
             detail=str(exc),
         )
 
     except PermissionError as exc:
-
         raise HTTPException(
             status_code=403,
             detail=str(exc),
         )
 
     except ValueError as exc:
-
         raise HTTPException(
             status_code=400,
             detail=str(exc),
@@ -269,29 +252,26 @@ def copy_object(
 ):
 
     try:
-
         return gallary_woult_service.copy(
-            owner_id=actor_id,
             object_id=object_id,
+            actor_id=actor_id,
             parent_id=request.parent_id,
+            new_name=request.new_name,
         )
 
     except FileNotFoundError as exc:
-
         raise HTTPException(
             status_code=404,
             detail=str(exc),
         )
 
     except PermissionError as exc:
-
         raise HTTPException(
             status_code=403,
             detail=str(exc),
         )
 
     except ValueError as exc:
-
         raise HTTPException(
             status_code=400,
             detail=str(exc),
@@ -305,36 +285,28 @@ def download(
 ):
 
     try:
-
-        path = (
-            gallary_woult_service
-            .download_path(
-                owner_id=actor_id,
-                object_id=object_id,
-            )
+        path = gallary_woult_service.get_download_path(
+            object_id=object_id,
+            actor_id=actor_id,
         )
 
         return FileResponse(
             path=path,
-            filename=None,
         )
 
     except FileNotFoundError as exc:
-
         raise HTTPException(
             status_code=404,
             detail=str(exc),
         )
 
     except PermissionError as exc:
-
         raise HTTPException(
             status_code=403,
             detail=str(exc),
         )
 
     except ValueError as exc:
-
         raise HTTPException(
             status_code=400,
             detail=str(exc),
@@ -342,27 +314,24 @@ def download(
 
 
 @router.delete("/{object_id}")
-def trash(
+def delete(
     object_id: str,
     actor_id: str = Depends(require_actor),
 ):
 
     try:
-
-        return gallary_woult_service.trash(
-            owner_id=actor_id,
+        return gallary_woult_service.delete(
             object_id=object_id,
+            actor_id=actor_id,
         )
 
     except FileNotFoundError as exc:
-
         raise HTTPException(
             status_code=404,
             detail=str(exc),
         )
 
     except PermissionError as exc:
-
         raise HTTPException(
             status_code=403,
             detail=str(exc),
@@ -376,16 +345,26 @@ def restore(
 ):
 
     try:
-
         return gallary_woult_service.restore(
-            owner_id=actor_id,
             object_id=object_id,
+            actor_id=actor_id,
         )
 
     except FileNotFoundError as exc:
-
         raise HTTPException(
             status_code=404,
+            detail=str(exc),
+        )
+
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail=str(exc),
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
             detail=str(exc),
         )
 
@@ -398,16 +377,45 @@ def lock(
 ):
 
     try:
-
         return gallary_woult_service.lock(
-            owner_id=actor_id,
             object_id=object_id,
+            actor_id=actor_id,
             locked=request.locked,
         )
 
     except FileNotFoundError as exc:
-
         raise HTTPException(
             status_code=404,
+            detail=str(exc),
+        )
+
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail=str(exc),
+        )
+
+
+@router.get("/{object_id}/versions")
+def versions(
+    object_id: str,
+    actor_id: str = Depends(require_actor),
+):
+
+    try:
+        return gallary_woult_service.versions(
+            object_id=object_id,
+            actor_id=actor_id,
+        )
+
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        )
+
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=403,
             detail=str(exc),
         )
