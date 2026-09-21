@@ -1,8 +1,19 @@
+/* =========================================================
+   MAIN BASE FOUNDATION
+   OPPORTUNITY DETAIL PAGE
+   API CONNECTION
+   ========================================================= */
+
 const API_BASE_URL =
     "https://rajeshkhandelwalofficial.onrender.com";
 
 
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
 function getElement(id) {
+
     return document.getElementById(id);
 }
 
@@ -25,6 +36,10 @@ function setText(id, value) {
 }
 
 
+/* =========================================================
+   OPPORTUNITY ID
+   ========================================================= */
+
 function getOpportunityId() {
 
     const params =
@@ -36,28 +51,44 @@ function getOpportunityId() {
 }
 
 
+/* =========================================================
+   ERROR
+   ========================================================= */
+
 function showError(message) {
 
     const loading =
-        getElement("opportunityLoading");
+        getElement(
+            "opportunityLoading"
+        );
 
     const error =
-        getElement("opportunityError");
+        getElement(
+            "opportunityError"
+        );
 
     if (loading) {
         loading.hidden = true;
     }
 
     if (error) {
+
         error.hidden = false;
-        error.textContent = message;
+
+        error.textContent =
+            message;
     }
 }
 
 
+/* =========================================================
+   FORMAT LIST
+   ========================================================= */
+
 function formatList(value) {
 
     if (Array.isArray(value)) {
+
         return value.length
             ? value.join(", ")
             : "—";
@@ -67,30 +98,48 @@ function formatList(value) {
 }
 
 
-function formatBudget(opportunity) {
+/* =========================================================
+   FORMAT BUDGET
+   ========================================================= */
+
+function formatBudget(
+    opportunity
+) {
 
     if (
         opportunity.budget === null ||
         opportunity.budget === undefined ||
         opportunity.budget === ""
     ) {
+
         return "—";
     }
 
     const currency =
         opportunity.currency || "";
 
-    return `${currency} ${opportunity.budget}`.trim();
+    return `${currency} ${opportunity.budget}`
+        .trim();
 }
 
 
-function showOpportunity(opportunity) {
+/* =========================================================
+   SHOW OPPORTUNITY
+   ========================================================= */
+
+function showOpportunity(
+    opportunity
+) {
 
     const loading =
-        getElement("opportunityLoading");
+        getElement(
+            "opportunityLoading"
+        );
 
     const card =
-        getElement("opportunityCard");
+        getElement(
+            "opportunityCard"
+        );
 
     if (loading) {
         loading.hidden = true;
@@ -106,50 +155,68 @@ function showOpportunity(opportunity) {
         opportunity.opportunity_type
     );
 
+
     setText(
         "opportunityTitle",
         opportunity.title
     );
 
+
     setText(
         "opportunityOwner",
-        `Owner: ${opportunity.owner_id || "—"}`
+        `Owner: ${
+            opportunity.owner_id || "—"
+        }`
     );
+
 
     setText(
         "opportunityId",
         opportunity.opportunity_id
     );
 
+
     setText(
         "opportunitySkills",
-        formatList(opportunity.skills)
+        formatList(
+            opportunity.skills
+        )
     );
+
 
     setText(
         "opportunityLanguages",
-        formatList(opportunity.languages)
+        formatList(
+            opportunity.languages
+        )
     );
+
 
     setText(
         "opportunityBudget",
-        formatBudget(opportunity)
+        formatBudget(
+            opportunity
+        )
     );
+
 
     setText(
         "opportunityDeadline",
         opportunity.deadline
     );
 
+
     setText(
         "opportunityAvailability",
         opportunity.availability
     );
 
+
     setText(
         "opportunityDescription",
         opportunity.description
     );
+
 
     setText(
         "opportunityStatus",
@@ -157,6 +224,10 @@ function showOpportunity(opportunity) {
     );
 }
 
+
+/* =========================================================
+   LOAD OPPORTUNITY
+   ========================================================= */
 
 async function loadOpportunity() {
 
@@ -177,7 +248,9 @@ async function loadOpportunity() {
 
         const response =
             await fetch(
-                `${API_BASE_URL}/opportunities/${encodeURIComponent(opportunityId)}`
+                `${API_BASE_URL}/opportunities/${encodeURIComponent(
+                    opportunityId
+                )}`
             );
 
 
@@ -189,8 +262,34 @@ async function loadOpportunity() {
         }
 
 
-        const opportunity =
+        const responseData =
             await response.json();
+
+
+        /*
+         * Backend may return:
+         *
+         * {
+         *     opportunity_id: "...",
+         *     ...
+         * }
+         *
+         * OR:
+         *
+         * {
+         *     message: "...",
+         *     data: {
+         *         opportunity_id: "...",
+         *         ...
+         *     }
+         * }
+         */
+
+        const opportunity =
+            responseData?.data &&
+            typeof responseData.data === "object"
+                ? responseData.data
+                : responseData;
 
 
         if (
@@ -222,6 +321,10 @@ async function loadOpportunity() {
     }
 }
 
+
+/* =========================================================
+   START
+   ========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
