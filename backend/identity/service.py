@@ -213,13 +213,6 @@ class IdentityService:
                 "Invalid identity status."
             )
 
-        # Existing authentication currently uses
-        # username as a login identifier, therefore
-        # username remains unique at this stage.
-        if self.search_identity(username):
-            raise ValueError(
-                "Username already exists."
-            )
 
         master_id = (
             self.generator.generate_master_id()
