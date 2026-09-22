@@ -63,6 +63,7 @@ class IdentityService:
         )
 
         self._migrate_columns()
+        self._migrate_username_constraint()
 
     def _migrate_columns(self):
         """Add missing columns to an existing database."""
@@ -110,6 +111,162 @@ class IdentityService:
         for column, statement in migrations.items():
             if column not in existing_columns:
                 self.database.execute(statement)
+
+    def _migrate_username_constraint(self):
+        """
+        Rebuild the legacy identity table when username has
+        an old UNIQUE constraint.
+
+        Final rule:
+        username   = duplicate allowed
+        unique_id  = always unique
+        """
+
+        rows = self.database.fetchall(
+            "PRAGMA table_info(master_identity)"
+        )
+
+        if not rows:
+            return
+
+        columns = {
+            row["name"]
+            for row in rows
+        }
+
+        if "username" not in columns:
+            return
+
+        indexes = self.database.fetchall(
+            "PRAGMA index_list(master_identity)"
+        )
+
+        has_unique_username_index = False
+
+        for index in indexes:
+            index_name = index["name"]
+            is_unique = bool(index["unique"])
+
+            if not is_unique:
+                continue
+
+            index_columns = self.database.fetchall(
+                f'PRAGMA index_info("{index_name}")'
+            )
+
+            indexed_columns = [
+                item["name"]
+                for item in index_columns
+            ]
+
+            if indexed_columns == ["username"]:
+                has_unique_username_index = True
+                break
+
+        if not has_unique_username_index:
+            return
+
+        self.database.execute(
+            """
+            CREATE TABLE master_identity_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                master_id TEXT NOT NULL UNIQUE,
+                identity_id TEXT NOT NULL UNIQUE,
+                supreme_id TEXT,
+                unique_id TEXT UNIQUE,
+                full_name TEXT NOT NULL,
+                display_name TEXT,
+                name TEXT,
+                username TEXT NOT NULL,
+                domain TEXT,
+                email TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                country TEXT,
+                state TEXT,
+                city TEXT,
+                language TEXT DEFAULT 'en',
+                timezone TEXT DEFAULT 'UTC',
+                identity_type TEXT DEFAULT 'PERSON',
+                status TEXT DEFAULT 'ACTIVE',
+                verified INTEGER DEFAULT 0,
+                profile_photo TEXT DEFAULT '',
+                profile_type TEXT DEFAULT 'PERSONAL',
+                version INTEGER DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+        self.database.execute(
+            """
+            INSERT INTO master_identity_new (
+                id,
+                master_id,
+                identity_id,
+                supreme_id,
+                unique_id,
+                full_name,
+                display_name,
+                name,
+                username,
+                domain,
+                email,
+                phone,
+                country,
+                state,
+                city,
+                language,
+                timezone,
+                identity_type,
+                status,
+                verified,
+                profile_photo,
+                profile_type,
+                version,
+                created_at,
+                updated_at
+            )
+            SELECT
+                id,
+                master_id,
+                identity_id,
+                supreme_id,
+                unique_id,
+                full_name,
+                display_name,
+                name,
+                username,
+                domain,
+                email,
+                phone,
+                country,
+                state,
+                city,
+                language,
+                timezone,
+                identity_type,
+                status,
+                verified,
+                profile_photo,
+                profile_type,
+                version,
+                created_at,
+                updated_at
+            FROM master_identity
+            """
+        )
+
+        self.database.execute(
+            "DROP TABLE master_identity"
+        )
+
+        self.database.execute(
+            """
+            ALTER TABLE master_identity_new
+            RENAME TO master_identity
+            """
+        )
 
     def _generate_unique_id(self) -> str:
         """Generate an unused 8-character ecosystem ID."""
