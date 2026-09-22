@@ -115,9 +115,7 @@ class IdentityService:
         """Generate an unused 8-character ecosystem ID."""
 
         for _ in range(100):
-            unique_id = (
-                self.generator.generate_unique_id()
-            )
+            unique_id = self.generator.generate_unique_id()
 
             row = self.database.fetchone(
                 """
@@ -213,7 +211,6 @@ class IdentityService:
                 "Invalid identity status."
             )
 
-
         master_id = (
             self.generator.generate_master_id()
         )
@@ -293,8 +290,8 @@ class IdentityService:
                 updated_at
             )
             VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """,
             (
@@ -470,28 +467,6 @@ class IdentityService:
 
                 updates[field_name] = value
 
-        if "username" in updates:
-            username = updates["username"]
-
-            if not self.validator.validate_username(
-                username
-            ):
-                raise ValueError(
-                    "Invalid username."
-                )
-
-            existing = self.search_identity(
-                username
-            )
-
-            if (
-                existing
-                and existing.master_id != master_id
-            ):
-                raise ValueError(
-                    "Username already exists."
-                )
-
         if "email" in updates:
             if not self.validator.validate_email(
                 updates["email"]
@@ -600,7 +575,7 @@ class IdentityService:
         self,
         keyword: str,
     ) -> Optional[MasterIdentity]:
-        """Find an identity by username."""
+        """Find the first identity matching username."""
 
         row = self.database.fetchone(
             """
