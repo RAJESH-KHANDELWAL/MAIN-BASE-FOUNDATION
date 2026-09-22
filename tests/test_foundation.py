@@ -1,8 +1,28 @@
+import tempfile
+
+from backend.database.service import DatabaseService
 from backend.identity.service import IdentityService
 
 
+def create_test_identity_service():
+    database_file = tempfile.NamedTemporaryFile(
+        suffix=".db",
+        delete=False,
+    )
+
+    database_file.close()
+
+    database = DatabaseService(
+        database_path=database_file.name
+    )
+
+    return IdentityService(
+        database_service=database
+    )
+
+
 def test_identity_service_initializes():
-    service = IdentityService()
+    service = create_test_identity_service()
 
     identities = service.list_identity()
 
@@ -10,7 +30,7 @@ def test_identity_service_initializes():
 
 
 def test_username_duplicates_are_allowed():
-    service = IdentityService()
+    service = create_test_identity_service()
 
     username = "TEST_DUPLICATE_USERNAME"
 
@@ -38,7 +58,7 @@ def test_username_duplicates_are_allowed():
 
 
 def test_unique_id_is_unique():
-    service = IdentityService()
+    service = create_test_identity_service()
 
     identity_one = service.create_identity(
         full_name="Unique Test One",
@@ -56,4 +76,5 @@ def test_unique_id_is_unique():
 
     assert len(identity_one.unique_id) == 8
     assert len(identity_two.unique_id) == 8
+
     assert identity_one.unique_id != identity_two.unique_id
