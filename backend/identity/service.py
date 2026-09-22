@@ -14,8 +14,14 @@ from backend.identity.validator import IdentityValidator
 class IdentityService:
     """Manage central identities for the ecosystem."""
 
-    def __init__(self):
-        self.database = DatabaseService()
+    def __init__(
+        self,
+        database_service: DatabaseService | None = None,
+    ):
+        self.database = (
+            database_service
+            or DatabaseService()
+        )
         self.generator = IdentityGenerator()
         self.validator = IdentityValidator()
         self.initialize()
@@ -92,19 +98,23 @@ class IdentityService:
             ),
             "identity_type": (
                 "ALTER TABLE master_identity "
-                "ADD COLUMN identity_type TEXT DEFAULT 'PERSON'"
+                "ADD COLUMN identity_type "
+                "TEXT DEFAULT 'PERSON'"
             ),
             "profile_photo": (
                 "ALTER TABLE master_identity "
-                "ADD COLUMN profile_photo TEXT DEFAULT ''"
+                "ADD COLUMN profile_photo "
+                "TEXT DEFAULT ''"
             ),
             "profile_type": (
                 "ALTER TABLE master_identity "
-                "ADD COLUMN profile_type TEXT DEFAULT 'PERSONAL'"
+                "ADD COLUMN profile_type "
+                "TEXT DEFAULT 'PERSONAL'"
             ),
             "version": (
                 "ALTER TABLE master_identity "
-                "ADD COLUMN version INTEGER DEFAULT 1"
+                "ADD COLUMN version "
+                "INTEGER DEFAULT 1"
             ),
         }
 
@@ -272,7 +282,9 @@ class IdentityService:
         """Generate an unused 8-character ecosystem ID."""
 
         for _ in range(100):
-            unique_id = self.generator.generate_unique_id()
+            unique_id = (
+                self.generator.generate_unique_id()
+            )
 
             row = self.database.fetchone(
                 """
@@ -489,7 +501,7 @@ class IdentityService:
             id=row["id"],
             master_id=row["master_id"],
             identity_id=row["identity_id"],
-            supreme_id=row["supreme_id"] or "",
+            supreme_id=row["supreme_id"],
             unique_id=row["unique_id"] or "",
             full_name=row["full_name"],
             display_name=row["display_name"] or "",
