@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from backend.database.service import DatabaseService
@@ -12,7 +12,7 @@ from backend.identity.validator import IdentityValidator
 
 
 class IdentityService:
-    """Manage master identities."""
+    """Manage central identities for the ecosystem."""
 
     def __init__(self):
         self.database = DatabaseService()
@@ -22,10 +22,12 @@ class IdentityService:
 
     @staticmethod
     def _utc_now() -> str:
-        return datetime.utcnow().isoformat()
+        """Return the current UTC timestamp."""
+        return datetime.now(timezone.utc).isoformat()
 
     def initialize(self):
         """Create and migrate the master identity table."""
+
         self.database.initialize()
 
         self.database.execute(
@@ -35,9 +37,12 @@ class IdentityService:
                 master_id TEXT NOT NULL UNIQUE,
                 identity_id TEXT NOT NULL UNIQUE,
                 supreme_id TEXT,
+                unique_id TEXT UNIQUE,
                 full_name TEXT NOT NULL,
                 display_name TEXT,
+                name TEXT,
                 username TEXT NOT NULL UNIQUE,
+                domain TEXT,
                 email TEXT NOT NULL,
                 phone TEXT NOT NULL,
                 country TEXT,
@@ -45,6 +50,7 @@ class IdentityService:
                 city TEXT,
                 language TEXT DEFAULT 'en',
                 timezone TEXT DEFAULT 'UTC',
+                identity_type TEXT DEFAULT 'PERSON',
                 status TEXT DEFAULT 'ACTIVE',
                 verified INTEGER DEFAULT 0,
                 profile_photo TEXT DEFAULT '',
@@ -59,7 +65,8 @@ class IdentityService:
         self._migrate_columns()
 
     def _migrate_columns(self):
-        """Add identity columns when upgrading an older database."""
+        """Add missing columns to an existing database."""
+
         rows = self.database.fetchall(
             "PRAGMA table_info(master_identity)"
         )
@@ -70,6 +77,22 @@ class IdentityService:
         }
 
         migrations = {
+            "unique_id": (
+                "ALTER TABLE master_identity "
+                "ADD COLUMN unique_id TEXT"
+            ),
+            "name": (
+                "ALTER TABLE master_identity "
+                "ADD COLUMN name TEXT"
+            ),
+            "domain": (
+                "ALTER TABLE master_identity "
+                "ADD COLUMN domain TEXT"
+            ),
+            "identity_type": (
+                "ALTER TABLE master_identity "
+                "ADD COLUMN identity_type TEXT DEFAULT 'PERSON'"
+            ),
             "profile_photo": (
                 "ALTER TABLE master_identity "
                 "ADD COLUMN profile_photo TEXT DEFAULT ''"
@@ -88,6 +111,31 @@ class IdentityService:
             if column not in existing_columns:
                 self.database.execute(statement)
 
+    def _generate_unique_id(self) -> str:
+        """Generate an unused 8-character ecosystem ID."""
+
+        for _ in range(100):
+            unique_id = (
+                self.generator.generate_unique_id()
+            )
+
+            row = self.database.fetchone(
+                """
+                SELECT unique_id
+                FROM master_identity
+                WHERE unique_id = ?
+                LIMIT 1
+                """,
+                (unique_id,),
+            )
+
+            if row is None:
+                return unique_id
+
+        raise RuntimeError(
+            "Unable to generate a unique ecosystem ID."
+        )
+
     def create_identity(
         self,
         full_name: str,
@@ -104,53 +152,102 @@ class IdentityService:
         status: str = "ACTIVE",
         profile_photo: str = "",
         profile_type: str = "PERSONAL",
+        name: str = "",
+        domain: str = "",
+        identity_type: str = "PERSON",
     ) -> MasterIdentity:
-        """Create a new master identity."""
+        """Create a new central identity."""
 
         full_name = full_name.strip()
         username = username.strip()
         email = email.strip()
         phone = phone.strip()
+
         display_name = (
             display_name.strip()
             if display_name
             else full_name
         )
 
+        name = (
+            name.strip()
+            if name
+            else display_name
+        )
+
+        domain = domain.strip()
         status = status.strip().upper()
         profile_type = profile_type.strip().upper()
+        identity_type = identity_type.strip().upper()
 
         if not full_name:
-            raise ValueError("Full name is required.")
+            raise ValueError(
+                "Full name is required."
+            )
 
-        if not self.validator.validate_username(username):
-            raise ValueError("Invalid username.")
+        if not self.validator.validate_username(
+            username
+        ):
+            raise ValueError(
+                "Invalid username."
+            )
 
-        if not self.validator.validate_email(email):
-            raise ValueError("Invalid email.")
+        if not self.validator.validate_email(
+            email
+        ):
+            raise ValueError(
+                "Invalid email."
+            )
 
-        if not self.validator.validate_phone(phone):
-            raise ValueError("Invalid phone number.")
+        if not self.validator.validate_phone(
+            phone
+        ):
+            raise ValueError(
+                "Invalid phone number."
+            )
 
-        if not self.validator.validate_status(status):
-            raise ValueError("Invalid identity status.")
+        if not self.validator.validate_status(
+            status
+        ):
+            raise ValueError(
+                "Invalid identity status."
+            )
 
+        # Existing authentication currently uses
+        # username as a login identifier, therefore
+        # username remains unique at this stage.
         if self.search_identity(username):
-            raise ValueError("Username already exists.")
+            raise ValueError(
+                "Username already exists."
+            )
 
-        master_id = self.generator.generate_master_id()
-        identity_id = self.generator.generate_identity_id()
+        master_id = (
+            self.generator.generate_master_id()
+        )
+
+        identity_id = (
+            self.generator.generate_identity_id()
+        )
+
+        unique_id = self._generate_unique_id()
 
         while self.identity_exists(master_id):
-            master_id = self.generator.generate_master_id()
+            master_id = (
+                self.generator.generate_master_id()
+            )
+
+        now = self._utc_now()
 
         return MasterIdentity(
             master_id=master_id,
             identity_id=identity_id,
             supreme_id=supreme_id.strip(),
+            unique_id=unique_id,
             full_name=full_name,
             display_name=display_name,
+            name=name,
             username=username,
+            domain=domain,
             email=email,
             phone=phone,
             country=country.strip(),
@@ -158,11 +255,14 @@ class IdentityService:
             city=city.strip(),
             language=language.strip() or "en",
             timezone=timezone.strip() or "UTC",
+            identity_type=identity_type or "PERSON",
             status=status,
             verified=False,
             profile_photo=profile_photo.strip(),
             profile_type=profile_type or "PERSONAL",
             version=1,
+            created_at=now,
+            updated_at=now,
         )
 
     def save_identity(
@@ -170,15 +270,19 @@ class IdentityService:
         identity: MasterIdentity,
     ) -> MasterIdentity:
         """Persist an identity."""
+
         self.database.execute(
             """
             INSERT INTO master_identity (
                 master_id,
                 identity_id,
                 supreme_id,
+                unique_id,
                 full_name,
                 display_name,
+                name,
                 username,
+                domain,
                 email,
                 phone,
                 country,
@@ -186,6 +290,7 @@ class IdentityService:
                 city,
                 language,
                 timezone,
+                identity_type,
                 status,
                 verified,
                 profile_photo,
@@ -194,15 +299,21 @@ class IdentityService:
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
             """,
             (
                 identity.master_id,
                 identity.identity_id,
                 identity.supreme_id,
+                identity.unique_id,
                 identity.full_name,
                 identity.display_name,
+                identity.name,
                 identity.username,
+                identity.domain,
                 identity.email,
                 identity.phone,
                 identity.country,
@@ -210,6 +321,7 @@ class IdentityService:
                 identity.city,
                 identity.language,
                 identity.timezone,
+                identity.identity_type,
                 identity.status,
                 int(identity.verified),
                 identity.profile_photo,
@@ -224,15 +336,19 @@ class IdentityService:
 
     @staticmethod
     def _row_to_identity(row) -> MasterIdentity:
-        """Convert a database row into a MasterIdentity."""
+        """Convert a database row into MasterIdentity."""
+
         return MasterIdentity(
             id=row["id"],
             master_id=row["master_id"],
             identity_id=row["identity_id"],
             supreme_id=row["supreme_id"] or "",
+            unique_id=row["unique_id"] or "",
             full_name=row["full_name"],
             display_name=row["display_name"] or "",
+            name=row["name"] or "",
             username=row["username"],
+            domain=row["domain"] or "",
             email=row["email"],
             phone=row["phone"],
             country=row["country"] or "",
@@ -240,11 +356,22 @@ class IdentityService:
             city=row["city"] or "",
             language=row["language"] or "en",
             timezone=row["timezone"] or "UTC",
+            identity_type=(
+                row["identity_type"]
+                or "PERSON"
+            ),
             status=row["status"] or "ACTIVE",
             verified=bool(row["verified"]),
-            profile_photo=row["profile_photo"] or "",
-            profile_type=row["profile_type"] or "PERSONAL",
-            version=int(row["version"] or 1),
+            profile_photo=(
+                row["profile_photo"] or ""
+            ),
+            profile_type=(
+                row["profile_type"]
+                or "PERSONAL"
+            ),
+            version=int(
+                row["version"] or 1
+            ),
             created_at=row["created_at"],
             updated_at=row["updated_at"],
         )
@@ -254,6 +381,7 @@ class IdentityService:
         master_id: str,
     ) -> Optional[MasterIdentity]:
         """Get an identity by master ID."""
+
         row = self.database.fetchone(
             """
             SELECT *
@@ -268,8 +396,30 @@ class IdentityService:
 
         return self._row_to_identity(row)
 
+    def get_by_unique_id(
+        self,
+        unique_id: str,
+    ) -> Optional[MasterIdentity]:
+        """Get an identity by its permanent 8-character ID."""
+
+        row = self.database.fetchone(
+            """
+            SELECT *
+            FROM master_identity
+            WHERE unique_id = ?
+            LIMIT 1
+            """,
+            (unique_id.strip().upper(),),
+        )
+
+        if row is None:
+            return None
+
+        return self._row_to_identity(row)
+
     def list_identity(self) -> list[MasterIdentity]:
         """Return all identities."""
+
         rows = self.database.fetchall(
             """
             SELECT *
@@ -289,6 +439,7 @@ class IdentityService:
         **fields,
     ) -> Optional[MasterIdentity]:
         """Update supplied identity fields."""
+
         identity = self.get_identity(master_id)
 
         if identity is None:
@@ -298,7 +449,9 @@ class IdentityService:
             "supreme_id",
             "full_name",
             "display_name",
+            "name",
             "username",
+            "domain",
             "email",
             "phone",
             "country",
@@ -306,6 +459,7 @@ class IdentityService:
             "city",
             "language",
             "timezone",
+            "identity_type",
             "status",
             "profile_photo",
             "profile_type",
@@ -314,7 +468,10 @@ class IdentityService:
         updates = {}
 
         for field_name, value in fields.items():
-            if field_name in allowed_fields and value is not None:
+            if (
+                field_name in allowed_fields
+                and value is not None
+            ):
                 if isinstance(value, str):
                     value = value.strip()
 
@@ -323,10 +480,16 @@ class IdentityService:
         if "username" in updates:
             username = updates["username"]
 
-            if not self.validator.validate_username(username):
-                raise ValueError("Invalid username.")
+            if not self.validator.validate_username(
+                username
+            ):
+                raise ValueError(
+                    "Invalid username."
+                )
 
-            existing = self.search_identity(username)
+            existing = self.search_identity(
+                username
+            )
 
             if (
                 existing
@@ -340,29 +503,47 @@ class IdentityService:
             if not self.validator.validate_email(
                 updates["email"]
             ):
-                raise ValueError("Invalid email.")
+                raise ValueError(
+                    "Invalid email."
+                )
 
         if "phone" in updates:
             if not self.validator.validate_phone(
                 updates["phone"]
             ):
-                raise ValueError("Invalid phone number.")
+                raise ValueError(
+                    "Invalid phone number."
+                )
 
         if "status" in updates:
-            updates["status"] = updates["status"].upper()
+            updates["status"] = (
+                updates["status"].upper()
+            )
 
             if not self.validator.validate_status(
                 updates["status"]
             ):
-                raise ValueError("Invalid identity status.")
+                raise ValueError(
+                    "Invalid identity status."
+                )
 
         if "profile_type" in updates:
             updates["profile_type"] = (
                 updates["profile_type"].upper()
             )
 
-        if "full_name" in updates and not updates["full_name"]:
-            raise ValueError("Full name cannot be empty.")
+        if "identity_type" in updates:
+            updates["identity_type"] = (
+                updates["identity_type"].upper()
+            )
+
+        if (
+            "full_name" in updates
+            and not updates["full_name"]
+        ):
+            raise ValueError(
+                "Full name cannot be empty."
+            )
 
         if not updates:
             return identity
@@ -371,15 +552,21 @@ class IdentityService:
         values = []
 
         for field_name, value in updates.items():
-            assignments.append(f"{field_name} = ?")
+            assignments.append(
+                f"{field_name} = ?"
+            )
             values.append(value)
 
         new_version = identity.version + 1
 
-        assignments.append("version = ?")
+        assignments.append(
+            "version = ?"
+        )
         values.append(new_version)
 
-        assignments.append("updated_at = ?")
+        assignments.append(
+            "updated_at = ?"
+        )
         values.append(self._utc_now())
 
         values.append(master_id)
@@ -395,8 +582,12 @@ class IdentityService:
 
         return self.get_identity(master_id)
 
-    def delete_identity(self, master_id: str) -> bool:
+    def delete_identity(
+        self,
+        master_id: str,
+    ) -> bool:
         """Delete an identity."""
+
         identity = self.get_identity(master_id)
 
         if identity is None:
@@ -417,6 +608,7 @@ class IdentityService:
         keyword: str,
     ) -> Optional[MasterIdentity]:
         """Find an identity by username."""
+
         row = self.database.fetchone(
             """
             SELECT *
@@ -436,8 +628,11 @@ class IdentityService:
         self,
         keyword: str,
     ) -> list[MasterIdentity]:
-        """Search identities by common identity fields."""
-        value = f"%{keyword.strip()}%"
+        """Search identities by common fields."""
+
+        value = (
+            f"%{keyword.strip()}%"
+        )
 
         rows = self.database.fetchall(
             """
@@ -445,12 +640,20 @@ class IdentityService:
             FROM master_identity
             WHERE master_id LIKE ?
                OR identity_id LIKE ?
+               OR unique_id LIKE ?
                OR username LIKE ?
+               OR name LIKE ?
                OR full_name LIKE ?
+               OR display_name LIKE ?
+               OR domain LIKE ?
                OR email LIKE ?
             ORDER BY id DESC
             """,
             (
+                value,
+                value,
+                value,
+                value,
                 value,
                 value,
                 value,
@@ -469,6 +672,7 @@ class IdentityService:
         master_id: str,
     ) -> Optional[MasterIdentity]:
         """Mark an identity as verified."""
+
         identity = self.get_identity(master_id)
 
         if identity is None:
@@ -495,6 +699,7 @@ class IdentityService:
         master_id: str,
     ) -> bool:
         """Check whether an identity exists."""
+
         row = self.database.fetchone(
             """
             SELECT master_id
