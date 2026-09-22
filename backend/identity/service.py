@@ -41,7 +41,7 @@ class IdentityService:
                 full_name TEXT NOT NULL,
                 display_name TEXT,
                 name TEXT,
-                username TEXT NOT NULL UNIQUE,
+                username TEXT NOT NULL,
                 domain TEXT,
                 email TEXT NOT NULL,
                 phone TEXT NOT NULL,
