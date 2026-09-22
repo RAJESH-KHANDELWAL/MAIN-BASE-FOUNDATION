@@ -1,67 +1,102 @@
-"""Core identity models for MAIN-BASE-FOUNDATION."""
+"""Identity models for MAIN-BASE-FOUNDATION."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 
-def _utc_now() -> str:
-    return datetime.utcnow().isoformat()
+def utc_now() -> str:
+    """Return the current UTC timestamp."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 @dataclass
 class MasterIdentity:
-    """Represent the master identity of a platform user."""
+    """Central identity record for the MAIN-BASE-FOUNDATION ecosystem."""
 
-    id: Optional[int] = None
     master_id: str = ""
     identity_id: str = ""
-    supreme_id: str = ""
-    full_name: str = ""
-    display_name: str = ""
+    unique_id: str = ""
+
+    name: str = ""
     username: str = ""
+    domain: str = ""
+
+    identity_type: str = "PERSON"
+    profile_type: str = "PERSONAL"
+
     email: str = ""
     phone: str = ""
-    country: str = ""
-    state: str = ""
-    city: str = ""
-    language: str = "en"
-    timezone: str = "UTC"
-    status: str = "ACTIVE"
-    verified: bool = False
+
     profile_photo: str = ""
-    profile_type: str = "PERSONAL"
+    status: str = "ACTIVE"
+
     version: int = 1
-    created_at: str = field(default_factory=_utc_now)
-    updated_at: str = field(default_factory=_utc_now)
+
+    created_at: str = field(default_factory=utc_now)
+    updated_at: str = field(default_factory=utc_now)
 
     def to_dict(self) -> dict:
-        """Return the complete public identity representation."""
+        """Return the identity as a JSON-safe dictionary."""
         return {
-            "id": self.id,
             "master_id": self.master_id,
             "identity_id": self.identity_id,
-            "supreme_id": self.supreme_id,
-            "full_name": self.full_name,
-            "display_name": self.display_name,
+            "unique_id": self.unique_id,
+            "name": self.name,
             "username": self.username,
+            "domain": self.domain,
+            "identity_type": self.identity_type,
+            "profile_type": self.profile_type,
             "email": self.email,
             "phone": self.phone,
-            "country": self.country,
-            "state": self.state,
-            "city": self.city,
-            "language": self.language,
-            "timezone": self.timezone,
-            "status": self.status,
-            "verified": self.verified,
             "profile_photo": self.profile_photo,
-            "profile_type": self.profile_type,
+            "status": self.status,
             "version": self.version,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
 
 
-__all__ = ["MasterIdentity"]
+@dataclass
+class FoundationIdentity:
+    """Core foundation identity for MAIN-BASE-FOUNDATION."""
+
+    foundation_id: str = ""
+    unique_id: str = ""
+
+    name: str = "MAIN BASE FOUNDATION"
+    username: str = ""
+    domain: str = ""
+
+    identity_type: str = "FOUNDATION"
+    profile_type: str = "CORE"
+
+    status: str = "ACTIVE"
+    version: int = 1
+
+    created_at: str = field(default_factory=utc_now)
+    updated_at: str = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict:
+        """Return the foundation identity as a JSON-safe dictionary."""
+        return {
+            "foundation_id": self.foundation_id,
+            "unique_id": self.unique_id,
+            "name": self.name,
+            "username": self.username,
+            "domain": self.domain,
+            "identity_type": self.identity_type,
+            "profile_type": self.profile_type,
+            "status": self.status,
+            "version": self.version,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
+__all__ = [
+    "MasterIdentity",
+    "FoundationIdentity",
+]
