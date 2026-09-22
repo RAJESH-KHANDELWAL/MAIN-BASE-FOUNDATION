@@ -5,6 +5,7 @@ import string
 class IdentityGenerator:
 
     LENGTH = 6
+    UNIQUE_ID_LENGTH = 8
 
     @staticmethod
     def _generate(prefix: str):
@@ -70,3 +71,14 @@ class IdentityGenerator:
     @staticmethod
     def generate_token():
         return IdentityGenerator._generate("TOK")
+
+    @staticmethod
+    def generate_unique_id():
+        """Generate an 8-character ecosystem-wide unique ID candidate."""
+
+        return "".join(
+            random.choices(
+                string.ascii_uppercase + string.digits,
+                k=IdentityGenerator.UNIQUE_ID_LENGTH
+            )
+        )
