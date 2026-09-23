@@ -1,4 +1,3 @@
-```python
 """
 MAIN BASE FOUNDATION
 
@@ -538,4 +537,4 @@ class VaultService:
 __all__ = [
     "VaultService",
 ]
-```
+
