@@ -52,10 +52,6 @@ from .model import (
 class MuktiMahalService:
     """Central service layer for the Mukti Mahal ecosystem."""
 
-    # =====================================================
-    # INITIALIZATION
-    # =====================================================
-
     def __init__(self) -> None:
         self._initialized: bool = False
 
@@ -88,7 +84,7 @@ class MuktiMahalService:
         ] = {}
 
     # =====================================================
-    # INITIALIZE
+    # INITIALIZATION
     # =====================================================
 
     def initialize(self) -> dict:
@@ -123,7 +119,7 @@ class MuktiMahalService:
         }
 
     # =====================================================
-    # 🏰 MAHAL MANAGEMENT
+    # MAHAL MANAGEMENT
     # =====================================================
 
     def create_mahal(
@@ -163,7 +159,7 @@ class MuktiMahalService:
         )
 
     # =====================================================
-    # 🏢 PRATAP GROUP
+    # PRATAP GROUP
     # =====================================================
 
     def create_group(
@@ -226,7 +222,7 @@ class MuktiMahalService:
         return group
 
     # =====================================================
-    # 👨‍👩‍👧 FAMILY MANAGEMENT
+    # FAMILY MANAGEMENT
     # =====================================================
 
     def add_family_member(
@@ -307,7 +303,7 @@ class MuktiMahalService:
         return members
 
     # =====================================================
-    # 👥 STAFF MANAGEMENT
+    # STAFF MANAGEMENT
     # =====================================================
 
     def add_staff_member(
@@ -376,7 +372,7 @@ class MuktiMahalService:
         return staff_members
 
     # =====================================================
-    # 🏠 ESTATE MANAGEMENT
+    # ESTATE MANAGEMENT
     # =====================================================
 
     def add_estate_area(
@@ -455,7 +451,7 @@ class MuktiMahalService:
         return areas
 
     # =====================================================
-    # 👔 EXECUTIVE ROLE
+    # EXECUTIVE ROLE
     # =====================================================
 
     def assign_executive_role(
@@ -490,7 +486,7 @@ class MuktiMahalService:
         return member
 
     # =====================================================
-    # 🎓 CAPABILITY EVALUATION
+    # CAPABILITY EVALUATION
     # =====================================================
 
     def register_capability_evaluation(
@@ -601,7 +597,7 @@ class MuktiMahalService:
         return member
 
     # =====================================================
-    # 🤝 FAMILY VISIT
+    # FAMILY VISIT
     # =====================================================
 
     def register_family_visit(
@@ -672,7 +668,7 @@ class MuktiMahalService:
                 "Welcome must be completed first."
             )
 
-        visit.introduction_completed = True
+        visit.introductions_completed = True
 
         return visit
 
@@ -686,7 +682,7 @@ class MuktiMahalService:
             visit_id
         )
 
-        if not visit.introduction_completed:
+        if not visit.introductions_completed:
             raise ValueError(
                 "Introductions must be completed first."
             )
@@ -733,7 +729,7 @@ class MuktiMahalService:
         return visit
 
     # =====================================================
-    # 📜 MUKTI PRINCIPLES
+    # MUKTI PRINCIPLES
     # =====================================================
 
     def principles(self) -> MuktiPrinciples:
@@ -742,7 +738,7 @@ class MuktiMahalService:
         return MuktiPrinciples()
 
     # =====================================================
-    # ⚙️ SETTINGS
+    # SETTINGS
     # =====================================================
 
     def set_setting(
