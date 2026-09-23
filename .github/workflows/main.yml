@@ -18,41 +18,57 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Compile backend
+        run: |
+          python -m compileall backend
+
       - name: Run MAIN BASE FOUNDATION boot test
         run: |
           python -m backend.main
 
+      - name: Run pytest
+        run: |
+          pytest -q
+
+      - name: Start FastAPI
+        run: |
+          nohup python start.py > fastapi.log 2>&1 &
+          echo $! > fastapi.pid
+
+      - name: Check FastAPI health
+        run: |
+          for i in {1..30}; do
+            if curl --fail http://127.0.0.1:8000/health; then
+              echo "FASTAPI HEALTH CHECK: PASS"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "FASTAPI HEALTH CHECK: FAILED"
+          cat fastapi.log
+          exit 1
+
+      - name: Stop FastAPI
+        if: always()
+        run: |
+          if [ -f fastapi.pid ]; then
+            kill "$(cat fastapi.pid)" || true
+          fi
+
       - name: Run business engine integration test
         run: |
           python - <<'PY'
-          from backend.engines.leads_business import (
-              LeadsBusinessEngine,
-              LeadStatus,
-          )
-          from backend.engines.sales_business import (
-              SalesBusinessEngine,
-              SalesStatus,
-          )
-          from backend.engines.customer_business import (
-              CustomerBusinessEngine,
-          )
-          from backend.engines.work_business import (
-              WorkBusinessEngine,
-              WorkStatus,
-              PaymentStatus,
-          )
-
-          print("=" * 60)
-          print("MAIN BASE FOUNDATION BUSINESS FLOW TEST")
-          print("=" * 60)
-
-          # 1. LEADS ENGINE
+          from backend.engines.leads_business import LeadsBusinessEngine, LeadStatus
+          from backend.engines.sales_business import SalesBusinessEngine, SalesStatus
+          from backend.engines.customer_business import CustomerBusinessEngine
+          from backend.engines.work_business import WorkBusinessEngine, WorkStatus, PaymentStatus
 
           leads = LeadsBusinessEngine()
 
@@ -73,10 +89,6 @@ jobs:
 
           assert leads.get_lead("LEAD-001").status == LeadStatus.QUALIFIED
 
-          print("LEADS ENGINE: PASS")
-
-          # 2. SALES ENGINE
-
           sales = SalesBusinessEngine()
 
           opportunity = sales.create_opportunity(
@@ -92,20 +104,9 @@ jobs:
           sales.qualify("OPP-001")
           sales.create_proposal("OPP-001")
           sales.start_negotiation("OPP-001")
+          sales.mark_won("OPP-001", customer_id="CUSTOMER-001")
 
-          sales.mark_won(
-              "OPP-001",
-              customer_id="CUSTOMER-001",
-          )
-
-          assert (
-              sales.get_opportunity("OPP-001").status
-              == SalesStatus.WON
-          )
-
-          print("SALES ENGINE: PASS")
-
-          # 3. CUSTOMER ENGINE
+          assert sales.get_opportunity("OPP-001").status == SalesStatus.WON
 
           customers = CustomerBusinessEngine()
 
@@ -120,13 +121,7 @@ jobs:
 
           assert customer.status.value == "ACTIVE"
 
-          print("CUSTOMER ENGINE: PASS")
-
-          # 4. WORK ENGINE
-
-          work_engine = WorkBusinessEngine(
-              platform_fee_rate=0.10
-          )
+          work_engine = WorkBusinessEngine(platform_fee_rate=0.10)
 
           work = work_engine.create_work(
               work_id="WORK-001",
@@ -150,14 +145,7 @@ jobs:
           work_engine.deliver("WORK-001")
           work_engine.approve("WORK-001")
 
-          assert (
-              work_engine.get_work("WORK-001").status
-              == WorkStatus.APPROVED
-          )
-
-          print("WORK ENGINE: PASS")
-
-          # 5. PAYMENT + PLATFORM COMMISSION
+          assert work_engine.get_work("WORK-001").status == WorkStatus.APPROVED
 
           payment = work_engine.create_payment(
               payment_id="PAYMENT-001",
@@ -173,15 +161,9 @@ jobs:
           work_engine.mark_payment_held("PAYMENT-001")
           work_engine.release_payment("PAYMENT-001")
 
-          payment = work_engine.payments["PAYMENT-001"]
+          assert work_engine.payments["PAYMENT-001"].status == PaymentStatus.RELEASED
 
-          assert payment.status == PaymentStatus.RELEASED
-
-          print("PAYMENT + COMMISSION: PASS")
-
-          print("=" * 60)
           print("BUSINESS FLOW TEST PASSED")
-          print("=" * 60)
           PY
 
       - name: Run business API integration test
@@ -198,10 +180,6 @@ jobs:
               verify_business,
               delete_business,
           )
-
-          print("=" * 60)
-          print("MAIN BASE FOUNDATION BUSINESS API TEST")
-          print("=" * 60)
 
           controller.service.businesses.clear()
 
@@ -249,9 +227,5 @@ jobs:
 
           assert missing["data"] is None
 
-          print("BUSINESS API: PASS")
-          print("=" * 60)
           print("BUSINESS API TEST PASSED")
-          print("=" * 60)
           PY
-          
