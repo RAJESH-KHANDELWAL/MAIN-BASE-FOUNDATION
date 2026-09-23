@@ -1,3 +1,4 @@
+"""
 MAIN BASE FOUNDATION
 
 SUPREME — Ecosystem Vault Service
@@ -423,7 +424,6 @@ class VaultService:
                 reason="Vault is not active.",
             )
 
-        # Primary owner always has vault management authority.
         if user_id == policy.primary_owner_id:
             return VaultAccessDecision(
                 vault_id=vault_id,
@@ -433,7 +433,6 @@ class VaultService:
                 reason="PRIMARY_OWNER authorized.",
             )
 
-        # Additional owners.
         if user_id in policy.owner_ids:
             return VaultAccessDecision(
                 vault_id=vault_id,
@@ -443,8 +442,6 @@ class VaultService:
                 reason="OWNER authorized.",
             )
 
-        # Admins may only operate where the policy explicitly
-        # allows management.
         if user_id in policy.admin_ids:
 
             if action in {
@@ -536,4 +533,3 @@ class VaultService:
 __all__ = [
     "VaultService",
 ]
-
