@@ -1,4 +1,3 @@
-```python
 """
 MAIN BASE FOUNDATION
 
@@ -250,4 +249,4 @@ class VaultSecurity:
 __all__ = [
     "VaultSecurity",
 ]
-```
+
