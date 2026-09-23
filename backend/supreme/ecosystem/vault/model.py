@@ -1,4 +1,3 @@
-```python
 """
 MAIN BASE FOUNDATION
 
@@ -305,4 +304,3 @@ __all__ = [
     "VaultAccessPolicy",
     "VaultAccessDecision",
 ]
-```
