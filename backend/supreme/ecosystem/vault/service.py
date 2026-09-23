@@ -1,4 +1,3 @@
-"""
 MAIN BASE FOUNDATION
 
 SUPREME — Ecosystem Vault Service
