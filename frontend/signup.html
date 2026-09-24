@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MAIN BASE FOUNDATION — CREATE ACCOUNT</title>
   <link rel="stylesheet" href="styles.css">
+
   <style>
     .signup-card {
       width: min(100% - 32px, 520px);
@@ -16,18 +17,22 @@
       border-radius: 18px;
       box-shadow: 0 16px 48px #0f172a12;
     }
+
     .signup-card h1 {
       margin: 10px 0;
       font-size: 28px;
       color: #123b82;
     }
+
     .signup-card .form-group {
       margin: 18px 0;
     }
+
     .signup-card label {
       display: block;
       margin-bottom: 7px;
     }
+
     .signup-card input {
       width: 100%;
       padding: 13px 14px;
@@ -36,6 +41,7 @@
       font: inherit;
       box-sizing: border-box;
     }
+
     .signup-card button {
       width: 100%;
       padding: 14px;
@@ -45,68 +51,103 @@
       color: white;
       cursor: pointer;
     }
+
+    .signup-card button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
     .signup-note {
       color: #475569;
       font-size: 14px;
       margin: 12px 0;
     }
+
     .signup-message {
       margin-top: 16px;
       overflow-wrap: anywhere;
     }
   </style>
 </head>
+
 <body>
   <main class="auth-page">
     <section class="signup-card">
       <div class="auth-brand">MAIN BASE FOUNDATION</div>
+
       <h1>CREATE ACCOUNT</h1>
-      <p>Create your account with the four requested fields.</p>
+
+      <p>Create your account using your name, Gmail ID and password.</p>
 
       <form id="signupForm">
         <div class="form-group">
           <label for="fullName">FULL NAME</label>
-          <input id="fullName" name="full_name" type="text"
-            autocomplete="name" placeholder="Enter your full name"
-            required maxlength="120">
+          <input
+            id="fullName"
+            name="full_name"
+            type="text"
+            autocomplete="name"
+            placeholder="Enter your full name"
+            required
+            maxlength="120"
+          >
         </div>
 
         <div class="form-group">
           <label for="email">GMAIL ID</label>
-          <input id="email" name="email" type="email"
-            autocomplete="email" placeholder="Enter your Gmail ID"
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            placeholder="Enter your Gmail ID"
             pattern="[a-zA-Z0-9._%+-]+@gmail\.com"
             title="Please enter a Gmail address ending in @gmail.com"
-            required>
+            required
+          >
         </div>
 
         <div class="form-group">
           <label for="password">PASSWORD</label>
-          <input id="password" name="password" type="password"
+          <input
+            id="password"
+            name="password"
+            type="password"
             autocomplete="new-password"
             placeholder="Create a password (minimum 8 characters)"
-            minlength="8" required>
+            minlength="8"
+            required
+          >
         </div>
 
         <div class="form-group">
           <label for="confirmPassword">CONFIRM PASSWORD</label>
-          <input id="confirmPassword" name="confirm_password"
-            type="password" autocomplete="new-password"
+          <input
+            id="confirmPassword"
+            name="confirm_password"
+            type="password"
+            autocomplete="new-password"
             placeholder="Re-enter your password"
-            minlength="8" required>
+            minlength="8"
+            required
+          >
         </div>
 
         <button id="signupSubmit" type="submit">
           CREATE ACCOUNT
         </button>
 
-        <div id="signupMessage" class="signup-message"
-          role="alert" aria-live="polite"></div>
+        <div
+          id="signupMessage"
+          class="signup-message"
+          role="alert"
+          aria-live="polite"
+        ></div>
       </form>
 
       <p class="signup-note">
-        Username and phone number are not requested here.
-        They can be added later in your profile.
+        Username and phone number can be added later in your profile.
+        Email verification must be configured separately.
       </p>
 
       <div class="auth-footer">
