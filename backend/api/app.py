@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import Optional
@@ -30,60 +31,74 @@ from backend.api.supreme import router as supreme_router
 from backend.api.users import router as users_router
 
 
+# ============================================================
+# MAIN APPLICATION
+# ============================================================
+
 app = FastAPI(
     title="MAIN-BASE-FOUNDATION",
     version="1.0.0",
 )
+
+
 # ============================================================
 # FRONTEND / WEBSITE CORS
+# ALL 8 DOMAINS + GITHUB PAGES
 # ============================================================
+
+ALLOWED_ORIGINS = [
+    # --------------------------------------------------------
+    # GITHUB PAGES
+    # --------------------------------------------------------
+    "https://rajeshkhandelwal.github.io",
+    "https://rajeshkhandelwalofficial.github.io",
+    "https://drrajeshkhandelwalibc.github.io",
+    "https://drrajeshkhandelwalibcofficial.github.io",
+
+    # --------------------------------------------------------
+    # MAIN DOMAINS
+    # --------------------------------------------------------
+    "https://rajeshkhandelwal.com",
+    "https://www.rajeshkhandelwal.com",
+
+    "https://rajeshkhandelwalofficial.com",
+    "https://www.rajeshkhandelwalofficial.com",
+
+    "https://drrajeshkhandelwalibc.com",
+    "https://www.drrajeshkhandelwalibc.com",
+
+    "https://drrajeshkhandelwalibcofficial.com",
+    "https://www.drrajeshkhandelwalibcofficial.com",
+
+    # --------------------------------------------------------
+    # RENDER BACKEND DOMAINS
+    # --------------------------------------------------------
+    "https://rajeshkhandelwal.onrender.com",
+    "https://rajeshkhandelwalofficial.onrender.com",
+    "https://drrajeshkhandelwalibc.onrender.com",
+    "https://drrajeshkhandelwalibcofficial.onrender.com",
+]
+
 
 app.add_middleware(
     CORSMiddleware,
-
-    allow_origins=[
-        # ----------------------------------------------------
-        # GITHUB PAGES
-        # ----------------------------------------------------
-        "https://rajeshkhandelwal.github.io",
-        "https://rajeshkhandelwalofficial.github.io",
-        "https://drrajeshkhandelwalibc.github.io",
-        "https://drrajeshkhandelwalibcofficial.github.io",
-
-        # ----------------------------------------------------
-        # MAIN DOMAINS
-        # ----------------------------------------------------
-        "https://rajeshkhandelwal.com",
-        "https://www.rajeshkhandelwal.com",
-
-        "https://rajeshkhandelwalofficial.com",
-        "https://www.rajeshkhandelwalofficial.com",
-
-        "https://drrajeshkhandelwalibc.com",
-        "https://www.drrajeshkhandelwalibc.com",
-
-        "https://drrajeshkhandelwalibcofficial.com",
-        "https://www.drrajeshkhandelwalibcofficial.com",
-
-        # ----------------------------------------------------
-        # CURRENT GITHUB PAGES FRONTEND
-        # ----------------------------------------------------
-        "https://rajeshkhandelwalofficial.github.io",
-    ],
-
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-
-    allow_methods=[
-        "*"
-    ],
-
-    allow_headers=[
-        "*"
-    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+
+# ============================================================
+# AUTHENTICATION SERVICE
+# ============================================================
 
 authentication_service = AuthenticationService()
 
+
+# ============================================================
+# AUTHENTICATED USER IDENTIFICATION
+# ============================================================
 
 def _require_ai_store_actor(
     authorization: Optional[str],
@@ -177,7 +192,7 @@ app.include_router(
 
 
 # ============================================================
-# ROOT
+# ROOT API
 # ============================================================
 
 @app.get("/")
@@ -193,7 +208,7 @@ def root():
 
 
 # ============================================================
-# HEALTH
+# HEALTH CHECK
 # ============================================================
 
 @app.get("/health")
