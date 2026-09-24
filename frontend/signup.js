@@ -1,103 +1,118 @@
 
-"use strict";
+/* MAIN BASE FOUNDATION — CREATE ACCOUNT */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("signupForm");
-  const fullName = document.getElementById("fullName");
-  const email = document.getElementById("email");
-  const password = document.getElementById("password");
-  const confirmPassword = document.getElementById("confirmPassword");
-  const message = document.getElementById("signupMessage");
-  const submitButton = document.getElementById("signupSubmit");
+const SIGNUP_API = "https://rajeshkhandelwalofficial.onrender.com";
 
-  if (
-    !form ||
-    !fullName ||
-    !email ||
-    !password ||
-    !confirmPassword ||
-    !message ||
-    !submitButton
-  ) {
-    console.error("CREATE ACCOUNT form elements are missing.");
+const form = document.getElementById("signupForm");
+const message = document.getElementById("signupMessage");
+const submitButton = document.getElementById("signupSubmit");
+
+function showSignupMessage(text, type = "error") {
+  if (!message) return;
+
+  message.textContent = text;
+  message.dataset.type = type;
+}
+
+form?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const full_name = document
+    .getElementById("fullName")
+    .value.trim();
+
+  const email = document
+    .getElementById("email")
+    .value.trim()
+    .toLowerCase();
+
+  const password = document
+    .getElementById("password")
+    .value;
+
+  const confirmPassword = document
+    .getElementById("confirmPassword")
+    .value;
+
+  // Validate required fields
+  if (!full_name) {
+    showSignupMessage("PLEASE ENTER YOUR FULL NAME.");
     return;
   }
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  if (!email.endsWith("@gmail.com")) {
+    showSignupMessage(
+      "PLEASE ENTER A VALID GMAIL ID ENDING IN @GMAIL.COM."
+    );
+    return;
+  }
 
-    message.textContent = "";
-    message.style.color = "";
+  if (password.length < 8) {
+    showSignupMessage(
+      "PASSWORD MUST BE AT LEAST 8 CHARACTERS."
+    );
+    return;
+  }
 
-    const name = fullName.value.trim();
-    const gmail = email.value.trim().toLowerCase();
-    const pass = password.value;
-    const confirmPass = confirmPassword.value;
+  if (password !== confirmPassword) {
+    showSignupMessage(
+      "PASSWORD AND CONFIRM PASSWORD DO NOT MATCH."
+    );
+    return;
+  }
 
-    if (!name) {
-      message.textContent = "Please enter your FULL NAME.";
-      fullName.focus();
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/i.test(gmail)) {
-      message.textContent = "Please enter a valid Gmail ID.";
-      email.focus();
-      return;
-    }
-
-    if (pass.length < 8) {
-      message.textContent = "PASSWORD must be at least 8 characters.";
-      password.focus();
-      return;
-    }
-
-    if (pass !== confirmPass) {
-      message.textContent = "PASSWORD and CONFIRM PASSWORD do not match.";
-      confirmPassword.focus();
-      return;
-    }
-
+  if (submitButton) {
     submitButton.disabled = true;
     submitButton.textContent = "CREATING ACCOUNT...";
+  }
 
-    try {
-      const response = await fetch("/users/register", {
+  showSignupMessage("");
+
+  try {
+    const response = await fetch(
+      `${SIGNUP_API}/users/register`,
+      {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
-          full_name: name,
-          email: gmail,
-          password: pass,
-          confirm_password: confirmPass
-        })
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.message ||
-          result.error ||
-          "Account creation failed. Please try again."
-        );
+          full_name,
+          email,
+          password,
+        }),
       }
+    );
 
-      message.style.color = "green";
-      message.textContent =
-        result.message ||
-        "Account created successfully. Please check your email for verification.";
+    const data = await response.json().catch(() => ({}));
 
-      form.reset();
-    } catch (error) {
-      message.style.color = "red";
-      message.textContent =
-        error.message || "Unable to connect to the server.";
-    } finally {
+    if (!response.ok) {
+      throw new Error(
+        data.detail ||
+          data.message ||
+          "ACCOUNT CREATION FAILED."
+      );
+    }
+
+    const username = data?.data?.username || "";
+    const userId = data?.data?.user_id || "";
+
+    showSignupMessage(
+      `ACCOUNT CREATED SUCCESSFULLY. USERNAME: ${username}. USER ID: ${userId}. EMAIL VERIFICATION IS NOT CONFIGURED YET.`,
+      "success"
+    );
+
+    form.reset();
+  } catch (error) {
+    showSignupMessage(
+      error.message ||
+        "UNABLE TO CREATE ACCOUNT. PLEASE TRY AGAIN."
+    );
+  } finally {
+    if (submitButton) {
       submitButton.disabled = false;
       submitButton.textContent = "CREATE ACCOUNT";
     }
-  });
+  }
 });
