@@ -473,17 +473,21 @@ async function checkAPIStatus() {
     }
 
 
+    statusElement.textContent =
+        "Connecting to API...";
+
+
     try {
 
         const data =
             await publicApiRequest(
-                "/"
+                "/health"
             );
 
 
         if (
             data &&
-            data.status === "RUNNING"
+            data.status === "healthy"
         ) {
 
             statusElement.textContent =
