@@ -1,1077 +1,569 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta charset="UTF-8">
+  <title>MY HOME | MAIN BASE FOUNDATION</title>
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+  <meta name="description" content="MAIN BASE FOUNDATION — Your unified digital workspace for profiles, business, opportunities, projects and connections.">
 
-    <meta
-        name="description"
-        content="MAIN BASE FOUNDATION — verified people, profiles, real opportunities and project workspace."
-    >
+  <meta name="theme-color" content="#0b57d0">
 
-    <title>MAIN BASE FOUNDATION</title>
+  <link rel="stylesheet" href="./styles.css">
 
-    <link
-        rel="stylesheet"
-        href="styles.css"
-    >
+  <style>
+    .workspace-home {
+      max-width: 1440px;
+      margin: auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr) 300px;
+      gap: 22px;
+    }
 
-    <style>
+    .workspace-sidebar,
+    .workspace-main,
+    .workspace-right {
+      min-width: 0;
+    }
 
-        /* =====================================================
-           AUTHENTICATED WORKSPACE
-           ===================================================== */
+    .workspace-card {
+      background: #fff;
+      border: 1px solid #e5eaf2;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
 
-        .workspace {
-            display: none;
-            padding: 70px 0;
-            background: #f5f7fb;
-        }
+    .workspace-card h2,
+    .workspace-card h3 {
+      margin-top: 0;
+    }
 
-        .workspace.is-visible {
-            display: block;
-        }
+    .workspace-nav {
+      display: grid;
+      gap: 8px;
+    }
 
-        .workspace-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 35px;
-            flex-wrap: wrap;
-        }
+    .workspace-nav a {
+      display: block;
+      padding: 11px 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #263449;
+      font-weight: 600;
+    }
 
-        .workspace-user {
-            font-size: 14px;
-            opacity: 0.75;
-            margin-top: 8px;
-        }
+    .workspace-nav a:hover {
+      background: #edf4ff;
+      color: #0b57d0;
+    }
 
-        .workspace-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+    .workspace-header {
+      background: #fff;
+      border-bottom: 1px solid #e5eaf2;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
 
-        .workspace-button {
-            border: 0;
-            cursor: pointer;
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-weight: 700;
-        }
+    .workspace-brand {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0b57d0;
+    }
 
-        .workspace-button.primary {
-            background: #111827;
-            color: #ffffff;
-        }
+    .workspace-search {
+      flex: 1;
+      max-width: 520px;
+    }
 
-        .workspace-button.danger {
-            background: #dc2626;
-            color: #ffffff;
-        }
+    .workspace-search input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #dce3ed;
+      border-radius: 30px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
 
-        .project-summary-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(
-                    auto-fit,
-                    minmax(180px, 1fr)
-                );
-            gap: 18px;
-            margin-bottom: 30px;
-        }
+    .workspace-btn {
+      display: inline-block;
+      padding: 11px 18px;
+      border: 0;
+      border-radius: 10px;
+      background: #0b57d0;
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
 
-        .project-summary-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 22px;
-        }
+    .workspace-btn.secondary {
+      background: #edf4ff;
+      color: #0b57d0;
+    }
 
-        .project-summary-card strong {
-            display: block;
-            font-size: 30px;
-            margin-bottom: 6px;
-        }
+    .workspace-hero {
+      background: linear-gradient(135deg, #0b57d0, #183b79);
+      color: #fff;
+      border-radius: 18px;
+      padding: 28px;
+      margin-bottom: 18px;
+    }
 
-        .project-summary-card span {
-            opacity: 0.7;
-        }
+    .workspace-hero h1 {
+      margin: 0 0 12px;
+      font-size: clamp(25px, 4vw, 38px);
+    }
 
-        .project-create-panel {
-            display: none;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 18px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
+    .workspace-hero p {
+      line-height: 1.7;
+      max-width: 680px;
+    }
 
-        .project-create-panel.is-visible {
-            display: block;
-        }
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
 
-        .project-form {
-            display: grid;
-            gap: 16px;
-        }
+    .workspace-tile {
+      display: block;
+      padding: 17px;
+      background: #f7f9fc;
+      border: 1px solid #e5eaf2;
+      border-radius: 14px;
+      color: #1b2b43;
+      text-decoration: none;
+    }
 
-        .project-form-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(
-                    auto-fit,
-                    minmax(220px, 1fr)
-                );
-            gap: 16px;
-        }
+    .workspace-tile strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
 
-        .project-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-        }
+    .workspace-tile span {
+      color: #65748a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
 
-        .project-form-group label {
-            font-weight: 700;
-            font-size: 14px;
-        }
+    .workspace-section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
 
-        .project-form-group input,
-        .project-form-group textarea,
-        .project-form-group select {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 9px;
-            font: inherit;
-        }
+    .workspace-section-title h2 {
+      margin: 0;
+      font-size: 20px;
+    }
 
-        .project-form-group textarea {
-            min-height: 110px;
-            resize: vertical;
-        }
+    .workspace-muted {
+      color: #718096;
+      font-size: 14px;
+      line-height: 1.6;
+    }
 
-        .project-list {
-            display: grid;
-            gap: 18px;
-        }
+    .workspace-feed-input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #dce3ed;
+      border-radius: 12px;
+      padding: 14px;
+      font: inherit;
+      resize: vertical;
+    }
 
-        .project-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 18px;
-            padding: 24px;
-        }
+    .workspace-feed-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
 
-        .project-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 15px;
-        }
+    .workspace-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: #64748b;
+    }
 
-        .project-card h3 {
-            margin: 0 0 8px;
-        }
+    .workspace-status-dot {
+      width: 9px;
+      height: 9px;
+      background: #16a34a;
+      border-radius: 50%;
+    }
 
-        .project-status {
-            display: inline-flex;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: #eef2ff;
-            font-size: 12px;
-            font-weight: 700;
-        }
+    .workspace-footer {
+      padding: 24px;
+      text-align: center;
+      color: #718096;
+      font-size: 13px;
+    }
 
-        .project-description {
-            margin: 15px 0;
-            opacity: 0.78;
-        }
+    @media (max-width: 1050px) {
+      .workspace-home {
+        grid-template-columns: 220px minmax(0, 1fr);
+      }
 
-        .project-meta {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 18px;
-        }
+      .workspace-right {
+        display: none;
+      }
+    }
 
-        .project-meta span {
-            padding: 7px 10px;
-            background: #f3f4f6;
-            border-radius: 8px;
-            font-size: 13px;
-        }
+    @media (max-width: 700px) {
+      .workspace-home {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
 
-        .project-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+      .workspace-sidebar {
+        display: none;
+      }
 
-        .project-actions button {
-            border: 0;
-            cursor: pointer;
-            padding: 9px 13px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
+      .workspace-header {
+        padding: 14px;
+      }
 
-        .project-empty,
-        .project-loading,
-        .project-error {
-            background: #ffffff;
-            border: 1px dashed #cbd5e1;
-            border-radius: 16px;
-            padding: 30px;
-            text-align: center;
-        }
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
 
-        .project-error {
-            color: #b91c1c;
-        }
-
-        .workspace-message {
-            margin: 15px 0;
-            min-height: 20px;
-            font-size: 14px;
-        }
-
-        .workspace-message.success {
-            color: #15803d;
-        }
-
-        .workspace-message.error {
-            color: #b91c1c;
-        }
-
-        @media (max-width: 700px) {
-
-            .workspace-header {
-                align-items: flex-start;
-            }
-
-            .project-card-header {
-                flex-direction: column;
-            }
-
-        }
-
-    </style>
-
+      .workspace-hero {
+        padding: 22px;
+      }
+    }
+  </style>
 </head>
-
 
 <body>
 
+  <!-- TOP HEADER -->
+  <header class="workspace-header">
+    <a href="./index.html" class="workspace-brand">
+      MAIN BASE FOUNDATION
+    </a>
 
-    <!-- =====================================================
-         HEADER
-         ===================================================== -->
+    <div class="workspace-search">
+      <input
+        type="search"
+        id="globalSearch"
+        placeholder="Search people, businesses, projects..."
+        aria-label="Search workspace"
+      >
+    </div>
 
-    <header class="site-header">
+    <div>
+      <a href="#my-space" class="workspace-btn secondary">MY HOME</a>
+      <a href="#sign-in" class="workspace-btn">SIGN IN</a>
+    </div>
+  </header>
 
-        <div class="container header-inner">
+  <!-- MAIN WORKSPACE -->
+  <main class="workspace-home">
 
-            <a
-                href="/"
-                class="logo"
-            >
-                MAIN BASE FOUNDATION
-            </a>
+    <!-- LEFT SIDEBAR -->
+    <aside class="workspace-sidebar">
 
+      <section class="workspace-card">
+        <h3>👤 MY SPACE</h3>
 
-            <nav class="navigation">
+        <nav class="workspace-nav">
+          <a href="#my-profile">👤 My Profile</a>
+          <a href="#my-business">🏢 My Business</a>
+          <a href="#my-company">🏬 My Company</a>
+          <a href="#my-shop">🛍️ My Shop</a>
+          <a href="#my-farm">🌱 My Farm</a>
+          <a href="#my-projects">🚀 My Projects</a>
+          <a href="#my-opportunities">💼 Opportunities</a>
+          <a href="#my-messages">💬 Messages</a>
+          <a href="#my-notifications">🔔 Notifications</a>
+          <a href="#my-saved">🔖 Saved</a>
+          <a href="#my-gallery">🖼️ GALLARY WOULT</a>
+          <a href="#my-settings">⚙️ Settings</a>
+        </nav>
+      </section>
 
-                <a href="#opportunities">
-                    Opportunities
-                </a>
+      <section class="workspace-card">
+        <h3>🔗 QUICK ACCESS</h3>
+        <nav class="workspace-nav">
+          <a href="#create-post">✍️ Create Post</a>
+          <a href="#create-project">➕ Create Project</a>
+          <a href="#create-opportunity">📢 Create Opportunity</a>
+        </nav>
+      </section>
 
-                <a href="#profiles">
-                    Profiles
-                </a>
+    </aside>
 
-                <a href="#projects">
-                    Projects
-                </a>
+    <!-- CENTRAL FEED -->
+    <section class="workspace-main" id="my-space">
 
-                <a href="#how-it-works">
-                    How It Works
-                </a>
+      <section class="workspace-hero">
+        <h1>WELCOME TO YOUR DIGITAL HOME</h1>
 
+        <p>
+          One account. One home. Multiple identities.
+          Manage your profile, business, company, shop, farm,
+          projects and opportunities from one unified digital workspace.
+        </p>
 
-                <button
-                    type="button"
-                    id="loginButton"
-                    class="login-button"
-                >
-                    Sign In
-                </button>
+        <a href="#my-profile" class="workspace-btn secondary">
+          EXPLORE MY SPACE
+        </a>
+      </section>
 
-            </nav>
-
+      <!-- ACCOUNT STATUS -->
+      <section class="workspace-card">
+        <div class="workspace-section-title">
+          <h2>MY WORKSPACE</h2>
+          <span class="workspace-status">
+            <span class="workspace-status-dot"></span>
+            <span id="apiStatus">Checking connection...</span>
+          </span>
         </div>
 
-    </header>
-
-
-    <main>
-
-
-        <!-- =================================================
-             PUBLIC HERO
-             ================================================= -->
-
-        <section class="hero">
-
-            <div class="container hero-grid">
-
-                <div class="hero-content">
-
-                    <div class="eyebrow">
-                        VERIFIED PEOPLE • REAL WORK • ONE PLATFORM
-                    </div>
-
-
-                    <h1>
-                        Find the right people.
-                        <br>
-                        Find the right work.
-                    </h1>
-
-
-                    <p>
-                        Build your profile, discover live opportunities,
-                        connect with the right people and manage work
-                        from one platform.
-                    </p>
-
-
-                    <div class="hero-actions">
-
-                        <a
-                            href="#profiles"
-                            class="button button-primary"
-                        >
-                            Create a Profile
-                        </a>
-
-
-                        <a
-                            href="#opportunities"
-                            class="button button-secondary"
-                        >
-                            Explore Opportunities
-                        </a>
-
-                    </div>
-
-                </div>
-
-
-                <div class="platform-card">
-
-                    <div class="card-label">
-                        PLATFORM STATUS
-                    </div>
-
-
-                    <div class="status-row">
-
-                        <span class="status-dot"></span>
-
-                        <span id="apiStatus">
-                            Checking API...
-                        </span>
-
-                    </div>
-
-
-                    <div class="platform-stat">
-
-                        <strong id="profileCount">
-                            —
-                        </strong>
-
-                        <span>
-                            Profiles
-                        </span>
-
-                    </div>
-
-
-                    <div class="platform-stat">
-
-                        <strong id="opportunityCount">
-                            —
-                        </strong>
-
-                        <span>
-                            Live Opportunities
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             REAL AUTHENTICATED WORKSPACE
-             ================================================= -->
-
-        <section
-            id="projectWorkspace"
-            class="workspace"
-        >
-
-            <div class="container">
-
-                <div class="workspace-header">
-
-                    <div>
-
-                        <div class="eyebrow">
-                            REAL WORKSPACE
-                        </div>
-
-                        <h2>
-                            PROJECT CONTROL CENTER
-                        </h2>
-
-                        <p
-                            id="workspaceUser"
-                            class="workspace-user"
-                        >
-                            Checking authenticated session...
-                        </p>
-
-                    </div>
-
-
-                    <div class="workspace-actions">
-
-                        <button
-                            type="button"
-                            id="createProjectButton"
-                            class="workspace-button primary"
-                        >
-                            + CREATE PROJECT
-                        </button>
-
-
-                        <button
-                            type="button"
-                            id="logoutButton"
-                            class="workspace-button danger"
-                        >
-                            LOGOUT
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-                <div
-                    id="workspaceMessage"
-                    class="workspace-message"
-                ></div>
-
-
-                <!-- =========================================
-                     PROJECT SUMMARY
-                     ========================================= -->
-
-                <div class="project-summary-grid">
-
-                    <div class="project-summary-card">
-
-                        <strong id="totalProjects">
-                            0
-                        </strong>
-
-                        <span>
-                            TOTAL PROJECTS
-                        </span>
-
-                    </div>
-
-
-                    <div class="project-summary-card">
-
-                        <strong id="activeProjects">
-                            0
-                        </strong>
-
-                        <span>
-                            ACTIVE PROJECTS
-                        </span>
-
-                    </div>
-
-
-                    <div class="project-summary-card">
-
-                        <strong id="completedProjects">
-                            0
-                        </strong>
-
-                        <span>
-                            COMPLETED PROJECTS
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- =========================================
-                     CREATE PROJECT
-                     ========================================= -->
-
-                <div
-                    id="projectCreatePanel"
-                    class="project-create-panel"
-                >
-
-                    <h3>
-                        CREATE NEW PROJECT
-                    </h3>
-
-
-                    <form
-                        id="projectForm"
-                        class="project-form"
-                    >
-
-                        <div class="project-form-grid">
-
-                            <div class="project-form-group">
-
-                                <label for="projectName">
-                                    PROJECT NAME
-                                </label>
-
-                                <input
-                                    id="projectName"
-                                    type="text"
-                                    required
-                                    placeholder="Enter project name"
-                                >
-
-                            </div>
-
-
-                            <div class="project-form-group">
-
-                                <label for="projectType">
-                                    PROJECT TYPE
-                                </label>
-
-                                <input
-                                    id="projectType"
-                                    type="text"
-                                    value="GENERAL"
-                                    placeholder="GENERAL"
-                                >
-
-                            </div>
-
-
-                            <div class="project-form-group">
-
-                                <label for="projectStatus">
-                                    STATUS
-                                </label>
-
-                                <select id="projectStatus">
-
-                                    <option value="ACTIVE">
-                                        ACTIVE
-                                    </option>
-
-                                    <option value="PLANNED">
-                                        PLANNED
-                                    </option>
-
-                                    <option value="ON_HOLD">
-                                        ON HOLD
-                                    </option>
-
-                                    <option value="COMPLETED">
-                                        COMPLETED
-                                    </option>
-
-                                </select>
-
-                            </div>
-
-
-                            <div class="project-form-group">
-
-                                <label for="projectVisibility">
-                                    VISIBILITY
-                                </label>
-
-                                <select id="projectVisibility">
-
-                                    <option value="PRIVATE">
-                                        PRIVATE
-                                    </option>
-
-                                    <option value="PUBLIC">
-                                        PUBLIC
-                                    </option>
-
-                                </select>
-
-                            </div>
-
-
-                            <div class="project-form-group">
-
-                                <label for="projectBudget">
-                                    BUDGET
-                                </label>
-
-                                <input
-                                    id="projectBudget"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0"
-                                >
-
-                            </div>
-
-
-                            <div class="project-form-group">
-
-                                <label for="projectCurrency">
-                                    CURRENCY
-                                </label>
-
-                                <input
-                                    id="projectCurrency"
-                                    type="text"
-                                    value="INR"
-                                >
-
-                            </div>
-
-
-                            <div class="project-form-group">
-
-                                <label for="projectDeadline">
-                                    DEADLINE
-                                </label>
-
-                                <input
-                                    id="projectDeadline"
-                                    type="date"
-                                >
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="project-form-group">
-
-                            <label for="projectDescription">
-                                DESCRIPTION
-                            </label>
-
-                            <textarea
-                                id="projectDescription"
-                                placeholder="Describe the project"
-                            ></textarea>
-
-                        </div>
-
-
-                        <div class="project-actions">
-
-                            <button
-                                type="submit"
-                                class="workspace-button primary"
-                            >
-                                SAVE PROJECT
-                            </button>
-
-
-                            <button
-                                type="button"
-                                id="cancelProjectButton"
-                                class="workspace-button"
-                            >
-                                CANCEL
-                            </button>
-
-                        </div>
-
-                    </form>
-
-                </div>
-
-
-                <!-- =========================================
-                     PROJECT LIST
-                     ========================================= -->
-
-                <div>
-
-                    <div class="section-heading">
-
-                        <div class="eyebrow">
-                            PROJECT MANAGEMENT
-                        </div>
-
-                        <h2>
-                            YOUR PROJECTS
-                        </h2>
-
-                    </div>
-
-
-                    <div
-                        id="projectList"
-                        class="project-list"
-                    >
-
-                        <div class="project-loading">
-                            Loading projects...
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             OPPORTUNITIES
-             ================================================= -->
-
-        <section
-            id="opportunities"
-            class="section"
-        >
-
-            <div class="container">
-
-                <div class="section-heading">
-
-                    <div class="eyebrow">
-                        LIVE OPPORTUNITIES
-                    </div>
-
-                    <h2>
-                        Real opportunities. Real people.
-                    </h2>
-
-                    <p>
-                        Relevant opportunities can be discovered
-                        using profile skills, interests, language
-                        and availability.
-                    </p>
-
-                </div>
-
-
-                <div
-                    id="opportunityList"
-                    class="opportunity-grid"
-                >
-
-                    <div class="loading-card">
-                        Loading live opportunities...
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             PROFILES
-             ================================================= -->
-
-        <section
-            id="profiles"
-            class="section section-alt"
-        >
-
-            <div class="container">
-
-                <div class="section-heading">
-
-                    <div class="eyebrow">
-                        UNIVERSAL PROFILES
-                    </div>
-
-                    <h2>
-                        One identity. Multiple profiles.
-                    </h2>
-
-                    <p>
-                        A person or organization can create different
-                        profiles for different real-world activities.
-                    </p>
-
-                </div>
-
-
-                <div class="profile-grid">
-
-                    <article class="profile-card">
-
-                        <span class="profile-number">
-                            01
-                        </span>
-
-                        <h3>
-                            Personal Profile
-                        </h3>
-
-                        <p>
-                            Skills, interests, experience,
-                            languages and availability.
-                        </p>
-
-                    </article>
-
-
-                    <article class="profile-card">
-
-                        <span class="profile-number">
-                            02
-                        </span>
-
-                        <h3>
-                            Business Profile
-                        </h3>
-
-                        <p>
-                            Services, products, business
-                            activities and opportunities.
-                        </p>
-
-                    </article>
-
-
-                    <article class="profile-card">
-
-                        <span class="profile-number">
-                            03
-                        </span>
-
-                        <h3>
-                            Company Profile
-                        </h3>
-
-                        <p>
-                            Organization information,
-                            teams, projects and authorized people.
-                        </p>
-
-                    </article>
-
-
-                    <article class="profile-card">
-
-                        <span class="profile-number">
-                            04
-                        </span>
-
-                        <h3>
-                            Farm Profile
-                        </h3>
-
-                        <p>
-                            Crops, seasonal requirements,
-                            equipment and farm activities.
-                        </p>
-
-                    </article>
-
-
-                    <article class="profile-card">
-
-                        <span class="profile-number">
-                            05
-                        </span>
-
-                        <h3>
-                            Shop Profile
-                        </h3>
-
-                        <p>
-                            Products, categories, location
-                            and shop operations.
-                        </p>
-
-                    </article>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             WORKFLOW
-             ================================================= -->
-
-        <section
-            id="how-it-works"
-            class="section"
-        >
-
-            <div class="container">
-
-                <div class="section-heading">
-
-                    <div class="eyebrow">
-                        PLATFORM WORKFLOW
-                    </div>
-
-                    <h2>
-                        From profile to completed work.
-                    </h2>
-
-                </div>
-
-
-                <div class="workflow">
-
-                    <div class="workflow-step">
-
-                        <strong>
-                            01
-                        </strong>
-
-                        <span>
-                            Identity &amp; Profile
-                        </span>
-
-                    </div>
-
-
-                    <div class="workflow-step">
-
-                        <strong>
-                            02
-                        </strong>
-
-                        <span>
-                            Opportunity
-                        </span>
-
-                    </div>
-
-
-                    <div class="workflow-step">
-
-                        <strong>
-                            03
-                        </strong>
-
-                        <span>
-                            AI Matching
-                        </span>
-
-                    </div>
-
-
-                    <div class="workflow-step">
-
-                        <strong>
-                            04
-                        </strong>
-
-                        <span>
-                            Connection
-                        </span>
-
-                    </div>
-
-
-                    <div class="workflow-step">
-
-                        <strong>
-                            05
-                        </strong>
-
-                        <span>
-                            Project &amp; Payment
-                        </span>
-
-                    </div>
-
-
-                    <div class="workflow-step">
-
-                        <strong>
-                            06
-                        </strong>
-
-                        <span>
-                            Reputation
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <!-- =====================================================
-         FOOTER
-         ===================================================== -->
-
-    <footer class="site-footer">
-
-        <div class="container footer-inner">
-
-            <span>
-                MAIN BASE FOUNDATION
-            </span>
-
-            <span>
-                Web • Android • iOS
-            </span>
-
+        <p class="workspace-muted">
+          Your digital identities and workspaces in one place.
+        </p>
+
+        <div class="workspace-grid">
+          <a href="#my-profile" class="workspace-tile">
+            <strong>👤 MY PROFILE</strong>
+            <span>Your personal identity, skills and professional information.</span>
+          </a>
+
+          <a href="#my-business" class="workspace-tile">
+            <strong>🏢 MY BUSINESS</strong>
+            <span>Manage business information, services and growth activities.</span>
+          </a>
+
+          <a href="#my-company" class="workspace-tile">
+            <strong>🏬 MY COMPANY</strong>
+            <span>Your company identity, team and organizational workspace.</span>
+          </a>
+
+          <a href="#my-shop" class="workspace-tile">
+            <strong>🛍️ MY SHOP</strong>
+            <span>Showcase products, services and business offerings.</span>
+          </a>
+
+          <a href="#my-farm" class="workspace-tile">
+            <strong>🌱 MY FARM</strong>
+            <span>Manage your farm identity and related projects.</span>
+          </a>
+
+          <a href="#my-gallery" class="workspace-tile">
+            <strong>🖼️ GALLARY WOULT</strong>
+            <span>Your planned central storage for images, documents and digital assets.</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- CREATE POST -->
+      <section class="workspace-card" id="create-post">
+        <div class="workspace-section-title">
+          <h2>✍️ CREATE A POST</h2>
         </div>
 
-    </footer>
+        <textarea
+          class="workspace-feed-input"
+          id="postContent"
+          rows="4"
+          placeholder="What's happening in your world?"
+        ></textarea>
 
+        <div class="workspace-feed-actions">
+          <button type="button" class="workspace-btn" id="createPostBtn">
+            CREATE POST
+          </button>
 
-    <script src="app.js"></script>
+          <a href="#my-gallery" class="workspace-btn secondary">
+            🖼️ ADD MEDIA
+          </a>
+        </div>
+
+        <p class="workspace-muted">
+          Post publishing and media upload require backend integration.
+        </p>
+      </section>
+
+      <!-- OPPORTUNITIES -->
+      <section class="workspace-card" id="my-opportunities">
+        <div class="workspace-section-title">
+          <h2>💼 OPPORTUNITIES</h2>
+          <a href="#create-opportunity" class="workspace-btn secondary">
+            VIEW ALL
+          </a>
+        </div>
+
+        <p class="workspace-muted">
+          Discover work, freelance projects, collaborations and business opportunities.
+        </p>
+
+        <div id="opportunityList">
+          <p class="workspace-muted">
+            Loading opportunities...
+          </p>
+        </div>
+
+        <p class="workspace-muted">
+          Total opportunities: <strong id="opportunityCount">0</strong>
+        </p>
+      </section>
+
+      <!-- PROFILES -->
+      <section class="workspace-card" id="my-profile">
+        <div class="workspace-section-title">
+          <h2>👥 PEOPLE & PROFILES</h2>
+          <a href="#my-profile" class="workspace-btn secondary">
+            EXPLORE
+          </a>
+        </div>
+
+        <p class="workspace-muted">
+          Connect with professionals, freelancers, entrepreneurs and business owners.
+        </p>
+
+        <p class="workspace-muted">
+          Profiles available: <strong id="profileCount">0</strong>
+        </p>
+      </section>
+
+      <!-- PROJECTS -->
+      <section class="workspace-card" id="my-projects">
+        <div class="workspace-section-title">
+          <h2>🚀 MY PROJECTS</h2>
+          <a href="#create-project" class="workspace-btn secondary">
+            CREATE PROJECT
+          </a>
+        </div>
+
+        <div id="projectWorkspace">
+          <p class="workspace-muted">
+            Your project workspace will appear here.
+          </p>
+        </div>
+      </section>
+
+      <!-- PROJECT FORM -->
+      <section class="workspace-card" id="create-project">
+        <div class="workspace-section-title">
+          <h2>➕ CREATE A PROJECT</h2>
+        </div>
+
+        <form id="projectForm">
+          <label for="projectTitle">Project Name</label>
+          <input
+            id="projectTitle"
+            name="title"
+            type="text"
+            placeholder="Enter project name"
+            required
+          >
+
+          <br><br>
+
+          <label for="projectDescription">Project Description</label>
+          <textarea
+            id="projectDescription"
+            name="description"
+            rows="4"
+            placeholder="Describe your project"
+            required
+          ></textarea>
+
+          <br><br>
+
+          <button type="submit" class="workspace-btn">
+            CREATE PROJECT
+          </button>
+        </form>
+      </section>
+
+      <!-- GALLARY WOULT -->
+      <section class="workspace-card" id="my-gallery">
+        <div class="workspace-section-title">
+          <h2>🖼️ GALLARY WOULT</h2>
+        </div>
+
+        <p class="workspace-muted">
+          Central digital storage for your photos, videos, documents,
+          business assets and project media.
+        </p>
+
+        <p class="workspace-muted">
+          Storage connection and file uploads must be enabled through the backend API.
+        </p>
+      </section>
+
+    </section>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="workspace-right">
+
+      <section class="workspace-card">
+        <h3>🌟 DISCOVER</h3>
+
+        <nav class="workspace-nav">
+          <a href="#my-opportunities">💼 Find Opportunities</a>
+          <a href="#my-profile">👥 Discover People</a>
+          <a href="#my-projects">🚀 Explore Projects</a>
+          <a href="#my-business">🏢 Business Network</a>
+        </nav>
+      </section>
+
+      <section class="workspace-card">
+        <h3>🔔 NOTIFICATIONS</h3>
+        <p class="workspace-muted" id="my-notifications">
+          Your notifications will appear here when notification services are connected.
+        </p>
+      </section>
+
+      <section class="workspace-card">
+        <h3>🔖 SAVED</h3>
+        <p class="workspace-muted" id="my-saved">
+          Your saved posts, profiles and projects will appear here.
+        </p>
+      </section>
+
+      <section class="workspace-card">
+        <h3>💬 MESSAGES</h3>
+        <p class="workspace-muted" id="my-messages">
+          Your conversations will appear here when messaging is connected.
+        </p>
+      </section>
+
+      <section class="workspace-card">
+        <h3>⚙️ SETTINGS</h3>
+        <nav class="workspace-nav">
+          <a href="#my-settings">Account Settings</a>
+          <a href="#my-settings">Privacy & Security</a>
+          <a href="#my-settings">Workspace Preferences</a>
+        </nav>
+      </section>
+
+    </aside>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="workspace-footer">
+    © MAIN BASE FOUNDATION — YOUR UNIFIED DIGITAL WORKSPACE
+  </footer>
+
+  <!-- EXISTING APPLICATION LOGIC -->
+  <script src="./app.js"></script>
 
 </body>
-
 </html>
