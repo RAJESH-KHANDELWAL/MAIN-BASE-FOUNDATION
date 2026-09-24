@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MAIN BASE FOUNDATION — CREATE ACCOUNT</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .signup-card {
+      width: min(100% - 32px, 520px);
+      margin: 56px auto;
+      padding: 32px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px #0f172a12;
+    }
+    .signup-card h1 {
+      margin: 10px 0;
+      font-size: 28px;
+      color: #123b82;
+    }
+    .signup-card .form-group {
+      margin: 18px 0;
+    }
+    .signup-card label {
+      display: block;
+      margin-bottom: 7px;
+    }
+    .signup-card input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 9px;
+      font: inherit;
+      box-sizing: border-box;
+    }
+    .signup-card button {
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 9px;
+      background: #155eef;
+      color: white;
+      cursor: pointer;
+    }
+    .signup-note {
+      color: #475569;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+    .signup-message {
+      margin-top: 16px;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <main class="auth-page">
+    <section class="signup-card">
+      <div class="auth-brand">MAIN BASE FOUNDATION</div>
+      <h1>CREATE ACCOUNT</h1>
+      <p>Create your account with the four requested fields.</p>
+
+      <form id="signupForm">
+        <div class="form-group">
+          <label for="fullName">FULL NAME</label>
+          <input id="fullName" name="full_name" type="text"
+            autocomplete="name" placeholder="Enter your full name"
+            required maxlength="120">
+        </div>
+
+        <div class="form-group">
+          <label for="email">GMAIL ID</label>
+          <input id="email" name="email" type="email"
+            autocomplete="email" placeholder="Enter your Gmail ID"
+            pattern="[a-zA-Z0-9._%+-]+@gmail\.com"
+            title="Please enter a Gmail address ending in @gmail.com"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">PASSWORD</label>
+          <input id="password" name="password" type="password"
+            autocomplete="new-password"
+            placeholder="Create a password (minimum 8 characters)"
+            minlength="8" required>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">CONFIRM PASSWORD</label>
+          <input id="confirmPassword" name="confirm_password"
+            type="password" autocomplete="new-password"
+            placeholder="Re-enter your password"
+            minlength="8" required>
+        </div>
+
+        <button id="signupSubmit" type="submit">
+          CREATE ACCOUNT
+        </button>
+
+        <div id="signupMessage" class="signup-message"
+          role="alert" aria-live="polite"></div>
+      </form>
+
+      <p class="signup-note">
+        Username and phone number are not requested here.
+        They can be added later in your profile.
+      </p>
+
+      <div class="auth-footer">
+        <a href="login.html">Already have an account? SIGN IN</a>
+        <br>
+        <a href="index.html">← BACK TO MAIN BASE FOUNDATION</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="signup.js"></script>
+</body>
+</html>
