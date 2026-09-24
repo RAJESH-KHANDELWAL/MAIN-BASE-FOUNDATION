@@ -34,7 +34,53 @@ app = FastAPI(
     title="MAIN-BASE-FOUNDATION",
     version="1.0.0",
 )
+# ============================================================
+# FRONTEND / WEBSITE CORS
+# ============================================================
 
+app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=[
+        # ----------------------------------------------------
+        # GITHUB PAGES
+        # ----------------------------------------------------
+        "https://rajeshkhandelwal.github.io",
+        "https://rajeshkhandelwalofficial.github.io",
+        "https://drrajeshkhandelwalibc.github.io",
+        "https://drrajeshkhandelwalibcofficial.github.io",
+
+        # ----------------------------------------------------
+        # MAIN DOMAINS
+        # ----------------------------------------------------
+        "https://rajeshkhandelwal.com",
+        "https://www.rajeshkhandelwal.com",
+
+        "https://rajeshkhandelwalofficial.com",
+        "https://www.rajeshkhandelwalofficial.com",
+
+        "https://drrajeshkhandelwalibc.com",
+        "https://www.drrajeshkhandelwalibc.com",
+
+        "https://drrajeshkhandelwalibcofficial.com",
+        "https://www.drrajeshkhandelwalibcofficial.com",
+
+        # ----------------------------------------------------
+        # CURRENT GITHUB PAGES FRONTEND
+        # ----------------------------------------------------
+        "https://rajeshkhandelwalofficial.github.io",
+    ],
+
+    allow_credentials=True,
+
+    allow_methods=[
+        "*"
+    ],
+
+    allow_headers=[
+        "*"
+    ],
+)
 
 authentication_service = AuthenticationService()
 
