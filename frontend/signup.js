@@ -1,118 +1,139 @@
 
-/* MAIN BASE FOUNDATION — CREATE ACCOUNT */
+"use strict";
 
-const SIGNUP_API = "https://rajeshkhandelwalofficial.onrender.com";
+document.addEventListener("DOMContentLoaded", () => {
+  const signupForm = document.getElementById("signupForm");
+  const fullNameInput = document.getElementById("fullName");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const confirmPasswordInput = document.getElementById("confirmPassword");
+  const submitButton = document.getElementById("signupSubmit");
+  const messageBox = document.getElementById("signupMessage");
 
-const form = document.getElementById("signupForm");
-const message = document.getElementById("signupMessage");
-const submitButton = document.getElementById("signupSubmit");
-
-function showSignupMessage(text, type = "error") {
-  if (!message) return;
-
-  message.textContent = text;
-  message.dataset.type = type;
-}
-
-form?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const full_name = document
-    .getElementById("fullName")
-    .value.trim();
-
-  const email = document
-    .getElementById("email")
-    .value.trim()
-    .toLowerCase();
-
-  const password = document
-    .getElementById("password")
-    .value;
-
-  const confirmPassword = document
-    .getElementById("confirmPassword")
-    .value;
-
-  // Validate required fields
-  if (!full_name) {
-    showSignupMessage("PLEASE ENTER YOUR FULL NAME.");
+  if (
+    !signupForm ||
+    !fullNameInput ||
+    !emailInput ||
+    !passwordInput ||
+    !confirmPasswordInput ||
+    !submitButton ||
+    !messageBox
+  ) {
+    console.error("Signup form elements are missing.");
     return;
   }
 
-  if (!email.endsWith("@gmail.com")) {
-    showSignupMessage(
-      "PLEASE ENTER A VALID GMAIL ID ENDING IN @GMAIL.COM."
-    );
-    return;
+  // API endpoint: same-origin backend route.
+  const REGISTER_API_URL = "/users/register";
+
+  function showMessage(message, type = "error") {
+    messageBox.textContent = message;
+    messageBox.style.color =
+      type === "success" ? "#15803d" : "#b91c1c";
   }
 
-  if (password.length < 8) {
-    showSignupMessage(
-      "PASSWORD MUST BE AT LEAST 8 CHARACTERS."
-    );
-    return;
+  function setLoading(isLoading) {
+    submitButton.disabled = isLoading;
+    submitButton.textContent = isLoading
+      ? "CREATING ACCOUNT..."
+      : "CREATE ACCOUNT";
   }
 
-  if (password !== confirmPassword) {
-    showSignupMessage(
-      "PASSWORD AND CONFIRM PASSWORD DO NOT MATCH."
-    );
-    return;
-  }
+  signupForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-  if (submitButton) {
-    submitButton.disabled = true;
-    submitButton.textContent = "CREATING ACCOUNT...";
-  }
+    const fullName = fullNameInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
 
-  showSignupMessage("");
+    messageBox.textContent = "";
 
-  try {
-    const response = await fetch(
-      `${SIGNUP_API}/users/register`,
-      {
+    if (!fullName) {
+      showMessage("Please enter your full name.");
+      fullNameInput.focus();
+      return;
+    }
+
+    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+      showMessage("Please enter a valid Gmail address ending in @gmail.com.");
+      emailInput.focus();
+      return;
+    }
+
+    if (password.length < 8) {
+      showMessage("Password must contain at least 8 characters.");
+      passwordInput.focus();
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showMessage("Passwords do not match.");
+      confirmPasswordInput.focus();
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(REGISTER_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
+          "Accept": "application/json"
         },
+        credentials: "same-origin",
         body: JSON.stringify({
-          full_name,
-          email,
-          password,
-        }),
+          full_name: fullName,
+          email: email,
+          password: password
+        })
+      });
+
+      let result = {};
+
+      try {
+        result = await response.json();
+      } catch {
+        result = {};
       }
-    );
 
-    const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const errorMessage =
+          result.detail ||
+          result.message ||
+          result.error ||
+          "Account creation failed. Please try again.";
 
-    if (!response.ok) {
-      throw new Error(
-        data.detail ||
-          data.message ||
-          "ACCOUNT CREATION FAILED."
+        showMessage(
+          typeof errorMessage === "string"
+            ? errorMessage
+            : "Please check your information and try again."
+        );
+        return;
+      }
+
+      showMessage(
+        result.message ||
+          "Account created successfully. You can now sign in.",
+        "success"
       );
+
+      signupForm.reset();
+
+      // Redirect to the existing sign-in page.
+      window.setTimeout(() => {
+        window.location.href = "login.html";
+      }, 1500);
+
+    } catch (error) {
+      console.error("Signup request failed:", error);
+
+      showMessage(
+        "Unable to connect to the server. Please check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    const username = data?.data?.username || "";
-    const userId = data?.data?.user_id || "";
-
-    showSignupMessage(
-      `ACCOUNT CREATED SUCCESSFULLY. USERNAME: ${username}. USER ID: ${userId}. EMAIL VERIFICATION IS NOT CONFIGURED YET.`,
-      "success"
-    );
-
-    form.reset();
-  } catch (error) {
-    showSignupMessage(
-      error.message ||
-        "UNABLE TO CREATE ACCOUNT. PLEASE TRY AGAIN."
-    );
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = "CREATE ACCOUNT";
-    }
-  }
+  });
 });
