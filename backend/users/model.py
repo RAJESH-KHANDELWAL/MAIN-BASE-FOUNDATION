@@ -1,3 +1,4 @@
+
 """User models for MAIN-BASE-FOUNDATION."""
 
 from __future__ import annotations
@@ -11,9 +12,12 @@ class User:
 
     user_id: str
     full_name: str
-    username: str
     email: str
-    phone: str
+    username: str = ""
+    phone: str = ""
+    phone_no: str = ""
+    mobile_no: str = ""
+    whatsapp_no: str = ""
     role: str = "USER"
     status: str = "ACTIVE"
 
@@ -25,6 +29,9 @@ class User:
             "username": self.username,
             "email": self.email,
             "phone": self.phone,
+            "phone_no": self.phone_no,
+            "mobile_no": self.mobile_no,
+            "whatsapp_no": self.whatsapp_no,
             "role": self.role,
             "status": self.status,
         }
