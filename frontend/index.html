@@ -1,754 +1,87 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="description"
-        content="MAIN BASE FOUNDATION — verified people, profiles, real opportunities and project management."
-    >
+<!-- ACCOUNT & BRAND PROFILES -->
 
-    <title>MAIN BASE FOUNDATION</title>
+<section id="profiles" class="section section-alt">
+    <div class="container">
 
-    <link rel="stylesheet" href="styles.css">
+        <div class="section-heading">
+            <div class="eyebrow">
+                YOUR ACCOUNT • YOUR BRAND • YOUR PROFILES
+            </div>
 
-    <style>
-        /* PROJECT WORKSPACE */
+            <h2>
+                One Gmail Account. Your Own Brand Universe.
+            </h2>
 
-        .project-workspace {
-            display: none;
-            padding: 60px 20px;
-            background: #f3f6fc;
-        }
+            <p>
+                हर Gmail Account का अपना अलग Dashboard,
+                अपना Brand Username और अपने अलग Personal,
+                Company, Business, Shop और Farm Profiles होंगे।
+            </p>
+        </div>
 
-        .project-workspace.is-visible {
-            display: block;
-        }
+        <!-- ACCOUNT STRUCTURE -->
 
-        .workspace-container {
-            max-width: 1150px;
-            margin: 0 auto;
-        }
+        <div class="profile-grid">
 
-        .workspace-header,
-        .workspace-toolbar,
-        .project-form-actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
+            <article class="profile-card">
+                <span class="profile-number">01</span>
+                <h3>YOUR GMAIL ACCOUNT</h3>
+                <p>
+                    आपका Gmail Account आपकी अलग पहचान होगा।
+                    हर Gmail Account का अपना निजी Dashboard
+                    और अपना अलग Data रहेगा।
+                </p>
+            </article>
 
-        .workspace-header {
-            margin-bottom: 30px;
-        }
+            <article class="profile-card">
+                <span class="profile-number">02</span>
+                <h3>YOUR BRAND USERNAME</h3>
+                <p>
+                    RAJESHKHANDELWAL या आपके चुने हुए
+                    Brand Username के नाम से आपकी पहचान
+                    दिखाई देगी।
+                </p>
+            </article>
 
-        .workspace-stats {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 18px;
-            margin: 25px 0;
-        }
+            <article class="profile-card">
+                <span class="profile-number">03</span>
+                <h3>PERSONAL PROFILE</h3>
+                <p>
+                    आपकी व्यक्तिगत जानकारी, पहचान,
+                    Skills और Professional Details।
+                </p>
+            </article>
 
-        .workspace-stat,
-        .workspace-panel,
-        .project-card {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 22px;
-        }
+            <article class="profile-card">
+                <span class="profile-number">04</span>
+                <h3>COMPANY & BUSINESS PROFILES</h3>
+                <p>
+                    आपकी अलग-अलग Companies और Businesses
+                    की अलग Profiles, जानकारी और गतिविधियाँ।
+                </p>
+            </article>
 
-        .workspace-stat strong {
-            display: block;
-            font-size: 30px;
-            color: #155eef;
-            margin-top: 8px;
-        }
+            <article class="profile-card">
+                <span class="profile-number">05</span>
+                <h3>SHOP & FARM PROFILES</h3>
+                <p>
+                    आपकी Shop, Farm और अन्य Activities
+                    के लिए अलग-अलग Profiles।
+                </p>
+            </article>
 
-        .workspace-toolbar {
-            margin: 25px 0;
-        }
-
-        .project-create-panel {
-            display: none;
-            margin-bottom: 25px;
-        }
-
-        .project-create-panel.is-visible {
-            display: block;
-        }
-
-        .project-form {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-        }
-
-        .project-form .form-field {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .project-form .form-field.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .project-form input,
-        .project-form select,
-        .project-form textarea {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font: inherit;
-        }
-
-        .project-form textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .project-form-actions {
-            grid-column: 1 / -1;
-            justify-content: flex-start;
-        }
-
-        .workspace-button {
-            padding: 12px 18px;
-            border: 0;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
-        }
-
-        .workspace-button-primary {
-            background: #155eef;
-            color: #fff;
-        }
-
-        .workspace-button-secondary {
-            background: #e8eef8;
-            color: #1e293b;
-        }
-
-        .workspace-button-danger {
-            background: #dc2626;
-            color: #fff;
-        }
-
-        .project-list {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-        }
-
-        .project-card h3 {
-            margin-top: 0;
-        }
-
-        .project-card p {
-            overflow-wrap: anywhere;
-        }
-
-        .project-card-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 18px;
-        }
-
-        .workspace-message {
-            margin: 16px 0;
-            padding: 12px;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .workspace-message:not(:empty) {
-            display: block;
-        }
-
-        .workspace-message.success {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .workspace-message.error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .project-empty,
-        .project-loading,
-        .project-error {
-            background: #fff;
-            border-radius: 12px;
-            padding: 25px;
-            border: 1px solid #e2e8f0;
-            grid-column: 1 / -1;
-        }
-
-        @media (max-width: 700px) {
-            .workspace-stats,
-            .project-list,
-            .project-form {
-                grid-template-columns: 1fr;
-            }
-
-            .project-form .form-field.full-width,
-            .project-form-actions {
-                grid-column: auto;
-            }
-
-            .workspace-header {
-                align-items: flex-start;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-    <!-- HEADER -->
-
-    <header class="site-header">
-        <div class="container header-inner">
-
-            <a href="/" class="logo">
-                MAIN BASE FOUNDATION
-            </a>
-
-            <nav class="navigation">
-                <a href="#opportunities">Opportunities</a>
-                <a href="#profiles">Profiles</a>
-                <a href="#how-it-works">How It Works</a>
-
-                <button
-                    type="button"
-                    id="loginButton"
-                    class="login-button"
-                >
-                    SIGN IN
-                </button>
-            </nav>
+            <article class="profile-card">
+                <span class="profile-number">06</span>
+                <h3>STORAGE & BRAND LOGO</h3>
+                <p>
+                    अपनी Photos और Logos को Storage में रखें।
+                    चुनी हुई Image को अपनी Profile के Logo
+                    के रूप में इस्तेमाल करें।
+                </p>
+            </article>
 
         </div>
-    </header>
 
-
-    <main>
-
-        <!-- HERO SECTION -->
-
-        <section class="hero">
-            <div class="container hero-grid">
-
-                <div class="hero-content">
-
-                    <div class="eyebrow">
-                        VERIFIED PEOPLE • REAL WORK • ONE PLATFORM
-                    </div>
-
-                    <h1>
-                        Find the right people.
-                        <br>
-                        Find the right work.
-                    </h1>
-
-                    <p>
-                        Build your profile, discover live opportunities,
-                        connect with the right people and manage work
-                        from one platform.
-                    </p>
-
-                    <div class="hero-actions">
-
-                        <a
-                            href="#profiles"
-                            class="button button-primary"
-                        >
-                            Create a Profile
-                        </a>
-
-                        <a
-                            href="#opportunities"
-                            class="button button-secondary"
-                        >
-                            Explore Opportunities
-                        </a>
-
-                    </div>
-
-                </div>
-
-                <div class="platform-card">
-
-                    <div class="card-label">
-                        PLATFORM STATUS
-                    </div>
-
-                    <div class="status-row">
-                        <span class="status-dot"></span>
-
-                        <span id="apiStatus">
-                            Checking API...
-                        </span>
-                    </div>
-
-                    <div class="platform-stat">
-                        <strong id="profileCount">—</strong>
-                        <span>Profiles</span>
-                    </div>
-
-                    <div class="platform-stat">
-                        <strong id="opportunityCount">—</strong>
-                        <span>Live Opportunities</span>
-                    </div>
-
-                </div>
-
-            </div>
-        </section>
-
-
-        <!-- OPPORTUNITIES -->
-
-        <section id="opportunities" class="section">
-            <div class="container">
-
-                <div class="section-heading">
-
-                    <div class="eyebrow">
-                        LIVE OPPORTUNITIES
-                    </div>
-
-                    <h2>
-                        Real opportunities. Real people.
-                    </h2>
-
-                    <p>
-                        Discover opportunities using profile skills,
-                        interests, language and availability.
-                    </p>
-
-                </div>
-
-                <div id="opportunityList" class="opportunity-grid">
-                    <div class="loading-card">
-                        Loading live opportunities...
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-
-        <!-- PROFILES -->
-
-        <section id="profiles" class="section section-alt">
-            <div class="container">
-
-                <div class="section-heading">
-
-                    <div class="eyebrow">
-                        UNIVERSAL PROFILES
-                    </div>
-
-                    <h2>
-                        One identity. Multiple profiles.
-                    </h2>
-
-                    <p>
-                        A person or organization can create different
-                        profiles for different real-world activities.
-                    </p>
-
-                </div>
-
-                <div class="profile-grid">
-
-                    <article class="profile-card">
-                        <span class="profile-number">01</span>
-                        <h3>Personal Profile</h3>
-                        <p>
-                            Skills, interests, experience,
-                            languages and availability.
-                        </p>
-                    </article>
-
-                    <article class="profile-card">
-                        <span class="profile-number">02</span>
-                        <h3>Business Profile</h3>
-                        <p>
-                            Services, products, business
-                            activities and opportunities.
-                        </p>
-                    </article>
-
-                    <article class="profile-card">
-                        <span class="profile-number">03</span>
-                        <h3>Company Profile</h3>
-                        <p>
-                            Organization information, teams,
-                            projects and authorized people.
-                        </p>
-                    </article>
-
-                    <article class="profile-card">
-                        <span class="profile-number">04</span>
-                        <h3>Farm Profile</h3>
-                        <p>
-                            Crops, seasonal requirements,
-                            equipment and farm activities.
-                        </p>
-                    </article>
-
-                    <article class="profile-card">
-                        <span class="profile-number">05</span>
-                        <h3>Shop Profile</h3>
-                        <p>
-                            Products, categories, location
-                            and shop operations.
-                        </p>
-                    </article>
-
-                </div>
-            </div>
-        </section>
-
-
-        <!-- HOW IT WORKS -->
-
-        <section id="how-it-works" class="section">
-            <div class="container">
-
-                <div class="section-heading">
-
-                    <div class="eyebrow">
-                        PLATFORM WORKFLOW
-                    </div>
-
-                    <h2>
-                        From profile to completed work.
-                    </h2>
-
-                </div>
-
-                <div class="workflow">
-
-                    <div class="workflow-step">
-                        <strong>01</strong>
-                        <span>Identity &amp; Profile</span>
-                    </div>
-
-                    <div class="workflow-step">
-                        <strong>02</strong>
-                        <span>Opportunity</span>
-                    </div>
-
-                    <div class="workflow-step">
-                        <strong>03</strong>
-                        <span>AI Matching</span>
-                    </div>
-
-                    <div class="workflow-step">
-                        <strong>04</strong>
-                        <span>Connection</span>
-                    </div>
-
-                    <div class="workflow-step">
-                        <strong>05</strong>
-                        <span>Project &amp; Payment</span>
-                    </div>
-
-                    <div class="workflow-step">
-                        <strong>06</strong>
-                        <span>Reputation</span>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-
-
-        <!-- AUTHENTICATED PROJECT WORKSPACE -->
-
-        <section
-            id="projectWorkspace"
-            class="project-workspace"
-        >
-
-            <div class="workspace-container">
-
-                <div class="workspace-header">
-
-                    <div>
-                        <div class="eyebrow">
-                            PRIVATE WORKSPACE
-                        </div>
-
-                        <h2>PROJECT WORKSPACE</h2>
-
-                        <p id="workspaceUser">
-                            SIGNED IN AS: USER
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        id="logoutButton"
-                        class="workspace-button workspace-button-danger"
-                    >
-                        LOG OUT
-                    </button>
-
-                </div>
-
-
-                <!-- PROJECT STATISTICS -->
-
-                <div class="workspace-stats">
-
-                    <div class="workspace-stat">
-                        <span>Total Projects</span>
-                        <strong id="totalProjects">0</strong>
-                    </div>
-
-                    <div class="workspace-stat">
-                        <span>Active Projects</span>
-                        <strong id="activeProjects">0</strong>
-                    </div>
-
-                    <div class="workspace-stat">
-                        <span>Completed Projects</span>
-                        <strong id="completedProjects">0</strong>
-                    </div>
-
-                </div>
-
-
-                <!-- WORKSPACE MESSAGE -->
-
-                <div
-                    id="workspaceMessage"
-                    class="workspace-message"
-                    role="status"
-                    aria-live="polite"
-                ></div>
-
-
-                <!-- PROJECT TOOLBAR -->
-
-                <div class="workspace-toolbar">
-
-                    <h3>MY PROJECTS</h3>
-
-                    <button
-                        type="button"
-                        id="createProjectButton"
-                        class="workspace-button workspace-button-primary"
-                    >
-                        + CREATE PROJECT
-                    </button>
-
-                </div>
-
-
-                <!-- CREATE PROJECT FORM -->
-
-                <div
-                    id="projectCreatePanel"
-                    class="workspace-panel project-create-panel"
-                >
-
-                    <h3>CREATE A NEW PROJECT</h3>
-
-                    <form id="projectForm" class="project-form">
-
-                        <div class="form-field full-width">
-                            <label for="projectName">
-                                Project Name *
-                            </label>
-
-                            <input
-                                type="text"
-                                id="projectName"
-                                name="projectName"
-                                placeholder="Enter project name"
-                                required
-                                maxlength="200"
-                            >
-                        </div>
-
-
-                        <div class="form-field full-width">
-                            <label for="projectDescription">
-                                Project Description
-                            </label>
-
-                            <textarea
-                                id="projectDescription"
-                                name="projectDescription"
-                                placeholder="Describe your project"
-                            ></textarea>
-                        </div>
-
-
-                        <div class="form-field">
-                            <label for="projectType">
-                                Project Type
-                            </label>
-
-                            <select id="projectType" name="projectType">
-                                <option value="GENERAL">GENERAL</option>
-                                <option value="BUSINESS">BUSINESS</option>
-                                <option value="DEVELOPMENT">DEVELOPMENT</option>
-                                <option value="MARKETING">MARKETING</option>
-                                <option value="PERSONAL">PERSONAL</option>
-                                <option value="REAL_ESTATE">REAL ESTATE</option>
-                                <option value="OTHER">OTHER</option>
-                            </select>
-                        </div>
-
-
-                        <div class="form-field">
-                            <label for="projectStatus">
-                                Project Status
-                            </label>
-
-                            <select id="projectStatus" name="projectStatus">
-                                <option value="ACTIVE">ACTIVE</option>
-                                <option value="PENDING">PENDING</option>
-                                <option value="COMPLETED">COMPLETED</option>
-                                <option value="ON_HOLD">ON HOLD</option>
-                                <option value="CANCELLED">CANCELLED</option>
-                            </select>
-                        </div>
-
-
-                        <div class="form-field">
-                            <label for="projectVisibility">
-                                Project Visibility
-                            </label>
-
-                            <select
-                                id="projectVisibility"
-                                name="projectVisibility"
-                            >
-                                <option value="PRIVATE">PRIVATE</option>
-                                <option value="PUBLIC">PUBLIC</option>
-                            </select>
-                        </div>
-
-
-                        <div class="form-field">
-                            <label for="projectBudget">
-                                Project Budget
-                            </label>
-
-                            <input
-                                type="number"
-                                id="projectBudget"
-                                name="projectBudget"
-                                min="0"
-                                step="0.01"
-                                placeholder="Enter budget"
-                            >
-                        </div>
-
-
-                        <div class="form-field">
-                            <label for="projectCurrency">
-                                Currency
-                            </label>
-
-                            <select
-                                id="projectCurrency"
-                                name="projectCurrency"
-                            >
-                                <option value="INR">INR - Indian Rupee</option>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - British Pound</option>
-                            </select>
-                        </div>
-
-
-                        <div class="form-field">
-                            <label for="projectDeadline">
-                                Project Deadline
-                            </label>
-
-                            <input
-                                type="date"
-                                id="projectDeadline"
-                                name="projectDeadline"
-                            >
-                        </div>
-
-
-                        <div class="project-form-actions">
-
-                            <button
-                                type="submit"
-                                id="saveProjectButton"
-                                class="workspace-button workspace-button-primary"
-                            >
-                                SAVE PROJECT
-                            </button>
-
-                            <button
-                                type="button"
-                                id="cancelProjectButton"
-                                class="workspace-button workspace-button-secondary"
-                            >
-                                CANCEL
-                            </button>
-
-                        </div>
-
-                    </form>
-
-                </div>
-
-
-                <!-- PROJECT LIST -->
-
-                <div
-                    id="projectList"
-                    class="project-list"
-                >
-                    <div class="project-loading">
-                        Loading your projects...
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-    </main>
-
-
-    <!-- FOOTER -->
-
-    <footer class="site-footer">
-        <div class="container footer-inner">
-
-            <span>MAIN BASE FOUNDATION</span>
-            <span>Web • Android • iOS</span>
-
-        </div>
-    </footer>
-
-
-    <!-- APPLICATION SCRIPT -->
-
-    <script src="app.js"></script>
-
-</body>
-</html>
+    </div>
+</section>
