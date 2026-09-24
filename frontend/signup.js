@@ -1,139 +1,136 @@
 
-"use strict";
+/* =========================================================
+   MAIN BASE FOUNDATION — CREATE ACCOUNT
+   SIGNUP + USERNAME HANDOFF TO SIGN IN
+   ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const signupForm = document.getElementById("signupForm");
-  const fullNameInput = document.getElementById("fullName");
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
-  const confirmPasswordInput = document.getElementById("confirmPassword");
-  const submitButton = document.getElementById("signupSubmit");
-  const messageBox = document.getElementById("signupMessage");
+const SIGNUP_API =
+    "https://rajeshkhandelwalofficial.onrender.com";
 
-  if (
-    !signupForm ||
-    !fullNameInput ||
-    !emailInput ||
-    !passwordInput ||
-    !confirmPasswordInput ||
-    !submitButton ||
-    !messageBox
-  ) {
-    console.error("Signup form elements are missing.");
-    return;
-  }
+const form = document.getElementById("signupForm");
+const message = document.getElementById("signupMessage");
+const submitButton = document.getElementById("signupSubmit");
 
-  // API endpoint: same-origin backend route.
-  const REGISTER_API_URL = "/users/register";
+function showSignupMessage(text, type = "error") {
+    if (!message) return;
 
-  function showMessage(message, type = "error") {
-    messageBox.textContent = message;
-    messageBox.style.color =
-      type === "success" ? "#15803d" : "#b91c1c";
-  }
+    message.textContent = text;
+    message.dataset.type = type;
+}
 
-  function setLoading(isLoading) {
-    submitButton.disabled = isLoading;
-    submitButton.textContent = isLoading
-      ? "CREATING ACCOUNT..."
-      : "CREATE ACCOUNT";
-  }
+if (form) {
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-  signupForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+        const full_name =
+            document.getElementById("fullName").value.trim();
 
-    const fullName = fullNameInput.value.trim();
-    const email = emailInput.value.trim().toLowerCase();
-    const password = passwordInput.value;
-    const confirmPassword = confirmPasswordInput.value;
+        const email =
+            document.getElementById("email").value.trim().toLowerCase();
 
-    messageBox.textContent = "";
+        const password =
+            document.getElementById("password").value;
 
-    if (!fullName) {
-      showMessage("Please enter your full name.");
-      fullNameInput.focus();
-      return;
-    }
+        const confirmPassword =
+            document.getElementById("confirmPassword").value;
 
-    if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
-      showMessage("Please enter a valid Gmail address ending in @gmail.com.");
-      emailInput.focus();
-      return;
-    }
+        if (!full_name) {
+            showSignupMessage("PLEASE ENTER YOUR FULL NAME.");
+            return;
+        }
 
-    if (password.length < 8) {
-      showMessage("Password must contain at least 8 characters.");
-      passwordInput.focus();
-      return;
-    }
+        if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+            showSignupMessage("PLEASE ENTER A VALID GMAIL ID.");
+            return;
+        }
 
-    if (password !== confirmPassword) {
-      showMessage("Passwords do not match.");
-      confirmPasswordInput.focus();
-      return;
-    }
+        if (password.length < 8) {
+            showSignupMessage("PASSWORD MUST BE AT LEAST 8 CHARACTERS.");
+            return;
+        }
 
-    setLoading(true);
+        if (password !== confirmPassword) {
+            showSignupMessage("PASSWORDS DO NOT MATCH.");
+            return;
+        }
 
-    try {
-      const response = await fetch(REGISTER_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          full_name: fullName,
-          email: email,
-          password: password
-        })
-      });
+        submitButton.disabled = true;
+        submitButton.textContent = "CREATING ACCOUNT...";
 
-      let result = {};
+        showSignupMessage("CONNECTING TO MAIN BASE FOUNDATION...", "loading");
 
-      try {
-        result = await response.json();
-      } catch {
-        result = {};
-      }
+        try {
+            const response = await fetch(
+                `${SIGNUP_API}/users/register`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        full_name,
+                        email,
+                        password
+                    })
+                }
+            );
 
-      if (!response.ok) {
-        const errorMessage =
-          result.detail ||
-          result.message ||
-          result.error ||
-          "Account creation failed. Please try again.";
+            const result = await response.json().catch(() => ({}));
 
-        showMessage(
-          typeof errorMessage === "string"
-            ? errorMessage
-            : "Please check your information and try again."
-        );
-        return;
-      }
+            if (!response.ok) {
+                throw new Error(
+                    result.detail ||
+                    result.message ||
+                    "ACCOUNT CREATION FAILED."
+                );
+            }
 
-      showMessage(
-        result.message ||
-          "Account created successfully. You can now sign in.",
-        "success"
-      );
+            const username =
+                result?.data?.username ||
+                result?.username ||
+                "";
 
-      signupForm.reset();
+            if (!username) {
+                throw new Error(
+                    "ACCOUNT CREATED, BUT USERNAME WAS NOT RECEIVED. PLEASE CONTACT SUPPORT."
+                );
+            }
 
-      // Redirect to the existing sign-in page.
-      window.setTimeout(() => {
-        window.location.href = "login.html";
-      }, 1500);
+            // Store only the username for the next sign-in step.
+            sessionStorage.setItem(
+                "main_base_foundation_pending_username",
+                username
+            );
 
-    } catch (error) {
-      console.error("Signup request failed:", error);
+            showSignupMessage(
+                `ACCOUNT CREATED SUCCESSFULLY!\nYOUR USERNAME: ${username}\nPLEASE USE THIS USERNAME AND YOUR PASSWORD TO SIGN IN.`,
+                "success"
+            );
 
-      showMessage(
-        "Unable to connect to the server. Please check your connection and try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  });
-});
+            // Add a Sign In link after successful registration.
+            let signInLink = document.getElementById("signupSignInLink");
+
+            if (!signInLink) {
+                signInLink = document.createElement("a");
+                signInLink.id = "signupSignInLink";
+                signInLink.href = "login.html";
+                signInLink.textContent = "CONTINUE TO SIGN IN";
+                signInLink.style.display = "inline-block";
+                signInLink.style.marginTop = "16px";
+                signInLink.style.fontWeight = "bold";
+                message.insertAdjacentElement("afterend", signInLink);
+            }
+
+            form.reset();
+
+        } catch (error) {
+            showSignupMessage(
+                error.message || "UNABLE TO CREATE ACCOUNT. PLEASE TRY AGAIN."
+            );
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "CREATE ACCOUNT";
+        }
+    });
+}
