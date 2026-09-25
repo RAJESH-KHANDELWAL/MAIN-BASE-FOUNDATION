@@ -8,3 +8,6 @@ services:
     startCommand: python start.py
     healthCheckPath: /health
     autoDeploy: true
+    envVars:
+      - key: SUPREME_CONTROL_TOKEN
+        sync: false
