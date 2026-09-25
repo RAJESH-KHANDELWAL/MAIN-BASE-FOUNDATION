@@ -1,6 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, HTTPException
+from pydantic import BaseModel
 
 from backend.supreme.controller import SupremeController
+from backend.supreme.control import SupremeControlService
 
 
 router = APIRouter(
@@ -10,6 +12,30 @@ router = APIRouter(
 
 controller = SupremeController()
 controller.initialize()
+
+
+class CommandRequest(BaseModel):
+    command: str
+    payload: dict | None = None
+
+
+def _require_service_token(authorization: str | None):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="INVALID_TOKEN",
+        )
+
+    token = authorization.replace("Bearer ", "", 1).strip()
+
+    if not SupremeControlService.validate_token(token):
+        raise HTTPException(
+            status_code=401,
+            detail="UNAUTHORIZED",
+        )
+
+    return token
+
 
 @router.get("/")
 def get_owner():
@@ -78,3 +104,31 @@ def change_password(
         supreme_id,
         password
     )
+
+
+@router.get("/control/status")
+def control_status(
+    authorization: str | None = Header(default=None),
+):
+    _require_service_token(authorization)
+    return SupremeControlService.get_status(controller)
+
+
+@router.post("/control/command")
+def control_command(
+    payload: CommandRequest,
+    authorization: str | None = Header(default=None),
+):
+    _require_service_token(authorization)
+
+    try:
+        return SupremeControlService.execute_command(
+            controller,
+            payload.command,
+            payload.payload or {},
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
