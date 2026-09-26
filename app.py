@@ -4,7 +4,6 @@ from identity_service import get_supreme_profile, get_person_profile, search_ent
 
 app = Flask(__name__)
 
-# CORS support
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -56,64 +55,42 @@ def supreme_person():
 def supreme_search():
     q = request.args.get("q", "").strip()
     if not q:
-        return jsonify({
-            "error": "Missing q query parameter"
-        }), 400
-
+        return jsonify({"error": "Missing q query parameter"}), 400
     results = search_entities(q)
-    return jsonify({
-        "query": q,
-        "results": results,
-        "count": len(results)
-    }), 200
+    return jsonify({"query": q, "results": results, "count": len(results)}), 200
 
 @app.get("/supreme/persons")
 def persons_list():
-    return jsonify({
-        "service": APP_NAME,
-        "people": [get_person_profile()]
-    }), 200
+    return jsonify({"service": APP_NAME, "people": [get_person_profile()]}), 200
 
 @app.get("/supreme/businesses")
 def businesses_list():
-    return jsonify({
-        "service": APP_NAME,
-        "businesses": [{
-            "business_id": BUSINESS_ID,
-            "owner_person_id": PERSON_ID,
-            "supreme_id": SUPREME_ID,
-            "name": "RAJESH KHANDELWAL OFFICIAL",
-            "display_name": "👑 RAJESH KHANDELWAL OFFICIAL 👑"
-        }]
-    }), 200
+    return jsonify({"service": APP_NAME, "businesses": [{
+        "business_id": BUSINESS_ID,
+        "owner_person_id": PERSON_ID,
+        "supreme_id": SUPREME_ID,
+        "name": "RAJESH KHANDELWAL OFFICIAL",
+        "display_name": "👑 RAJESH KHANDELWAL OFFICIAL 👑"
+    }]}), 200
 
 @app.get("/supreme/companies")
 def companies_list():
-    return jsonify({
-        "service": APP_NAME,
-        "companies": [{
-            "company_id": COMPANY_ID,
-            "owner_person_id": PERSON_ID,
-            "business_id": BUSINESS_ID,
-            "supreme_id": SUPREME_ID,
-            "name": "DR RAJESH KHANDELWAL IBC",
-            "display_name": "👑 DR RAJESH KHANDELWAL IBC 👑"
-        }]
-    }), 200
+    return jsonify({"service": APP_NAME, "companies": [{
+        "company_id": COMPANY_ID,
+        "owner_person_id": PERSON_ID,
+        "business_id": BUSINESS_ID,
+        "supreme_id": SUPREME_ID,
+        "name": "DR RAJESH KHANDELWAL IBC",
+        "display_name": "👑 DR RAJESH KHANDELWAL IBC 👑"
+    }]}), 200
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({
-        "error": "Not found",
-        "message": "The requested endpoint does not exist"
-    }), 404
+    return jsonify({"error": "Not found", "message": "The requested endpoint does not exist"}), 404
 
 @app.errorhandler(500)
 def server_error(error):
-    return jsonify({
-        "error": "Server error",
-        "message": "Internal server error"
-    }), 500
+    return jsonify({"error": "Server error", "message": "Internal server error"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT, debug=False)
